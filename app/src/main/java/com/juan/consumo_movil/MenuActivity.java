@@ -2,6 +2,8 @@ package com.juan.consumo_movil;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 
@@ -15,12 +17,13 @@ import com.juan.consumo_movil.ui.actividades.FragmentActPanel;
 import com.juan.consumo_movil.ui.comunidades.ComunidadesFragment;
 import com.juan.consumo_movil.ui.perfil.PerfilFragment;
 import com.juan.consumo_movil.ui.principal.PrincipalFragment;
-
 public class MenuActivity extends AppCompatActivity {
 
     private static final String TAG = "MenuActivity";
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabCreateActivity;
+    private boolean isMenuEnabled = true; // Flag to prevent rapid taps
+    private static final int MENU_TIMEOUT = 500; // Timeout in milliseconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +63,13 @@ public class MenuActivity extends AppCompatActivity {
 
         // Configurar navegación inferior
         bottomNavigationView.setOnItemSelectedListener(item -> {
+            if (!isMenuEnabled) {
+                return false; // Ignore taps if menu is disabled
+            }
+
+            isMenuEnabled = false; // Disable menu temporarily
+            new Handler(Looper.getMainLooper()).postDelayed(() -> isMenuEnabled = true, MENU_TIMEOUT); // Re-enable menu after timeout
+
             Fragment fragment = null;
             int itemId = item.getItemId();
 

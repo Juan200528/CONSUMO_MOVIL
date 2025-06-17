@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -73,7 +72,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         itemList = new ArrayList<>();
         actividadAdapter = new ActividadAdapter(
-                requireContext(), // Proporciona el Contexto
+                requireContext(),
                 itemList,
                 this,
                 this::mostrarDialogoEliminar,
@@ -95,6 +94,10 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        tvEmptyActividades.setText("Cargando actividades...");
+        tvEmptyActividades.setVisibility(View.VISIBLE);
+        recyclerActividades.setVisibility(View.GONE);
 
         ApiService api = RetrofitClient.getApiService();
         Call<List<ActividadModel>> call = api.obtenerActividades("Bearer " + token);
@@ -238,31 +241,27 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         TextView tvFechaDetalle = dialog.findViewById(R.id.tvFechaDetalle);
         TextView tvLugarDetalle = dialog.findViewById(R.id.tvLugarDetalle);
         TextView tvResponsablesDetalle = dialog.findViewById(R.id.tvResponsablesDetalle);
-        Switch switchPromocion = dialog.findViewById(R.id.switchPromocion);
 
         tvTituloDetalle.setText(actividad.getTitle());
         tvDescripcionDetalle.setText(actividad.getDescription());
         tvFechaDetalle.setText(actividad.getDate());
         tvLugarDetalle.setText(actividad.getPlace());
         tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
-        switchPromocion.setChecked(actividad.isPromoted());
 
         dialog.findViewById(R.id.btnVolver).setOnClickListener(v -> dialog.dismiss());
-
-        switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                Toast.makeText(getContext(), "Promocionando: " + actividad.getTitle(), Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getContext(), "Desactivado: " + actividad.getTitle(), Toast.LENGTH_SHORT).show();
-            }
-        });
 
         dialog.show();
     }
 
     private void actualizarVisibilidad() {
-        recyclerActividades.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
-        tvEmptyActividades.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
+        if (itemList.isEmpty()) {
+            recyclerActividades.setVisibility(View.GONE);
+            tvEmptyActividades.setVisibility(View.VISIBLE);
+            tvEmptyActividades.setText("No hay actividades disponibles");
+        } else {
+            recyclerActividades.setVisibility(View.VISIBLE);
+            tvEmptyActividades.setVisibility(View.GONE);
+        }
     }
 
     @Override
