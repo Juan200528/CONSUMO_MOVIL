@@ -46,7 +46,7 @@ public class PromocionadasFragment extends Fragment {
                 actividad -> {}, // onActividadClickListener
                 actividad -> {}, // onEliminarClickListener
                 actividad -> {}, // onEditarClickListener
-                actividad -> {}  // onDetallesClickListener
+                (actividadModel, v) -> {} // onDetallesClickListener
         );
         recyclerView.setAdapter(adapter);
 

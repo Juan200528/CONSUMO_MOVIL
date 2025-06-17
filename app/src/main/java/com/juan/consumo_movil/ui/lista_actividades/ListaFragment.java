@@ -17,7 +17,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -42,9 +41,7 @@ import retrofit2.Response;
 
 public class ListaFragment extends Fragment implements ActividadAdapterLista.OnActividadClickListener,
         ActividadAdapterLista.OnDetallesClickListener, ActividadAdapterLista.OnAsistirClickListener {
-
     private static final String TAG = "ListaFragment";
-
     private RecyclerView recyclerView;
     private ActividadAdapterLista adapter;
     private List<Actividad> actividadList;
@@ -52,8 +49,6 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
     private TextView tvEmpty;
     private ImageButton btnBuscar;
     private SessionManager sessionManager;
-
-    private ListaViewModel listaViewModel;
 
     public static ListaFragment newInstance() {
         return new ListaFragment();
@@ -77,28 +72,78 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
         adapter = new ActividadAdapterLista(actividadList, this, this, this);
         recyclerView.setAdapter(adapter);
 
-        // Inicializar ViewModel
-        listaViewModel = new ViewModelProvider(this).get(ListaViewModel.class);
-
-        // Observar cambios en las actividades
-        listaViewModel.getActividades().observe(getViewLifecycleOwner(), actividades -> {
-            if (actividades != null) {
-                listaOriginal.clear();
-                listaOriginal.addAll(actividades);
-                actividadList.clear();
-                actividadList.addAll(listaOriginal);
-                adapter.notifyDataSetChanged();
-                actualizarVisibilidad();
-            }
-        });
-
-        // Cargar actividades desde el ViewModel
-        listaViewModel.cargarActividadesDesdeApi(requireContext());
+        cargarActividadesDesdeAPI();
 
         // Listener del botón de búsqueda
         btnBuscar.setOnClickListener(v -> mostrarDialogoBusqueda());
 
         return view;
+    }
+
+    private void cargarActividadesDesdeAPI() {
+        String token = sessionManager.getToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(requireContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ApiService api = RetrofitClient.getApiService();
+
+        // ✅ Cambiado a obtenerActividadesOtrosUsuarios
+        Call<List<ActividadModel>> call = api.obtenerActividadesOtrosUsuarios("Bearer " + token);
+
+        call.enqueue(new Callback<List<ActividadModel>>() {
+            @Override
+            public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<ActividadModel> modelos = response.body();
+                    List<Actividad> listaConvertida = new ArrayList<>();
+                    for (ActividadModel model : modelos) {
+                        listaConvertida.add(convertirAPIaActividad(model));
+                    }
+                    listaOriginal.clear();
+                    listaOriginal.addAll(listaConvertida);
+                    actividadList.clear();
+                    actividadList.addAll(listaOriginal);
+                    adapter.notifyDataSetChanged();
+                    actualizarVisibilidad();
+                } else {
+                    Log.e(TAG, "Error al obtener actividades: " + response.code());
+                    Toast.makeText(requireContext(), "Error al cargar actividades", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
+                Log.e(TAG, "Fallo al llamar a la API", t);
+                Toast.makeText(requireContext(), "No se pudo conectar con el servidor", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private Actividad convertirAPIaActividad(ActividadModel model) {
+        Actividad actividad = new Actividad();
+        try {
+            actividad.setId(Integer.parseInt(model.getId()));
+        } catch (NumberFormatException ignored) {
+            actividad.setId(0);
+        }
+        actividad.setTitulo(model.getTitle());
+        actividad.setDescripcion(model.getDescription());
+        actividad.setLugar(model.getPlace());
+        actividad.setFecha(model.getDate());
+
+        if (model.getResponsible() != null && !model.getResponsible().isEmpty()) {
+            actividad.setResponsables(String.join(", ", model.getResponsible()));
+        } else {
+            actividad.setResponsables("Sin responsables");
+        }
+
+        actividad.setPromocionada(model.isPromoted());
+        actividad.setPasada(false); // Puedes calcular esto si lo necesitas
+        actividad.setAsistido(false); // Esto puede venir desde la API o manejarse localmente
+
+        return actividad;
     }
 
     private void mostrarDialogoBusqueda() {
@@ -154,7 +199,6 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
 
         adapter.notifyDataSetChanged();
         actualizarVisibilidad();
-
         Toast.makeText(requireContext(), "Mostrando " + actividadList.size() + " resultados", Toast.LENGTH_SHORT).show();
     }
 

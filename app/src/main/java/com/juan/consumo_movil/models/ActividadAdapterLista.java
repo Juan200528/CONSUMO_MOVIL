@@ -124,13 +124,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         }
     }
 
-    private void compartirActividad(Actividad actividad, Context context) {
-        Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("text/plain");
-        shareIntent.putExtra(Intent.EXTRA_SUBJECT, actividad.getTitulo());
-        shareIntent.putExtra(Intent.EXTRA_TEXT, "¡Mira esta actividad: " + actividad.getTitulo() + "\n" + actividad.getDescripcion());
-        context.startActivity(Intent.createChooser(shareIntent, "Compartir actividad"));
-    }
+
 
     private void mostrarDialogoDetalles(Actividad actividad, View itemView) {
         Dialog dialog = new Dialog(itemView.getContext());
