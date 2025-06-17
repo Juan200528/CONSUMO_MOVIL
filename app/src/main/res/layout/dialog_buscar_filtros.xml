@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#f5f5f5"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Campo de búsqueda -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Buscar por palabra clave (título o descripción)"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <EditText
+            android:id="@+id/etBuscar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre actividad..."
+            android:background="@drawable/edit_text_border"
+            android:padding="8dp"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Filtrado por fecha -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Filtrar por fecha"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgFechaSeleccionada"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp">
+
+            <RadioButton
+                android:id="@+id/rbFechaTodas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Todas"
+                android:button="@null"
+                android:background="@drawable/custom_radio_button"
+                android:padding="9dp"
+                android:textSize="14sp"/>
+
+            <RadioButton
+                android:id="@+id/rbFechaProximas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Próximas"
+                android:button="@null"
+                android:background="@drawable/custom_radio_button"
+                android:padding="9dp"
+                android:layout_marginStart="16dp"
+                android:textSize="14sp"/>
+
+            <RadioButton
+                android:id="@+id/rbFechaPasadas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pasadas"
+                android:button="@null"
+                android:background="@drawable/custom_radio_button"
+                android:padding="9dp"
+                android:layout_marginStart="16dp"
+                android:textSize="14sp"/>
+        </RadioGroup>
+
+        <!-- Filtrado por estado -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Filtrar por estado"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+
+        <RadioGroup
+            android:id="@+id/rgEstadoSeleccionado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp">
+
+            <RadioButton
+                android:id="@+id/rbEstadoTodas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Todas"
+                android:button="@null"
+                android:background="@drawable/custom_radio_button"
+                android:padding="9dp"
+                android:textSize="14sp"/>
+
+            <RadioButton
+                android:id="@+id/rbEstadoPromocionadas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Promocionadas"
+                android:button="@null"
+                android:background="@drawable/custom_radio_button"
+                android:padding="9dp"
+                android:layout_marginStart="16dp"
+                android:textSize="14sp"/>
+        </RadioGroup>
+
+        <!-- Botón buscar -->
+        <Button
+            android:id="@+id/btnBuscar"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:text="Buscar"
+            android:backgroundTint="#03683E"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textAllCaps="false"/>
+    </LinearLayout>
+</ScrollView>

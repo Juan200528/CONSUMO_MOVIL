@@ -1,0 +1,52 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Barra de búsqueda -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/tvTituloLista"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Lista Actividades"
+            android:textAlignment="center"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"/>
+
+        <ImageButton
+            android:id="@+id/btnBuscarLupa"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/lupa"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Buscar actividades"/>
+    </LinearLayout>
+
+    <!-- Mensaje vacío -->
+    <TextView
+        android:id="@+id/tvEmptyLista"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No hay actividades"
+        android:textAlignment="center"
+        android:textSize="16sp"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- RecyclerView principal -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerLista"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+</LinearLayout>
