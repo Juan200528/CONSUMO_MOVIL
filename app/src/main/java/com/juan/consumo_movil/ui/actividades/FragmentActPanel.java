@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.ui.lista_actividades.ListaFragment;
+import com.juan.consumo_movil.ui.promocionadas.PromocionadasFragment;
 //import com.juan.consumo_movil.ui.actividad_promocionada.PromocionadasFragment;
 //import com.juan.consumo_movil.ui.busca_filtrar_actividades.BuscarFragment;
 //import com.juan.consumo_movil.ui.recordatorio.RecordatorioFragment;
@@ -34,7 +35,7 @@ public class FragmentActPanel extends Fragment {
 
       // cardBuscarFiltrar.setOnClickListener(v -> abrirFragmento(new BuscarFragment()));
         cardListaActividades.setOnClickListener(v -> abrirFragmento(new ListaFragment()));
-        //cardPromocionadas.setOnClickListener(v -> abrirFragmento(new PromocionadasFragment()));
+        cardPromocionadas.setOnClickListener(v -> abrirFragmento(new PromocionadasFragment()));
         //cardRecordatorio.setOnClickListener(v -> abrirFragmento(new RecordatorioFragment()));
 
         // Aplicar efecto de "presión" a los LinearLayout simulando botones

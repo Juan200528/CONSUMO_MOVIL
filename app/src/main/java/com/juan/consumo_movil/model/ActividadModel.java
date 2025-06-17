@@ -30,6 +30,9 @@ public class ActividadModel {
     @SerializedName("promotion")
     private Promotion promotion;
 
+    @SerializedName("past") // Este campo indica si la actividad ya pasó
+    private boolean pasada;
+
     // Opcional: si usas datos del usuario
     @SerializedName("user")
     private User user;
@@ -146,5 +149,13 @@ public class ActividadModel {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public boolean isPasada() {
+        return pasada;
+    }
+
+    public void setPasada(boolean pasada) {
+        this.pasada = pasada;
     }
 }

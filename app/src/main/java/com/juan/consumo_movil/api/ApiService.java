@@ -4,6 +4,7 @@ package com.juan.consumo_movil.api;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
+import com.juan.consumo_movil.models.PromotionRequest;
 
 import java.util.List;
 
@@ -13,6 +14,7 @@ import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
@@ -74,4 +76,6 @@ public interface ApiService {
             @Header("Authorization") String token,
             @Path("id") String actividadId
     );
+    @PATCH("api/tasks/{id}/promotion")
+    Call<ResponseBody> promoteTask(@Path("id") String id, @Body PromotionRequest promotionRequest);
 }
