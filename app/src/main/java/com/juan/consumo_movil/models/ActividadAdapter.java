@@ -1,7 +1,6 @@
 package com.juan.consumo_movil.models;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,10 +15,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.juan.consumo_movil.R;
-import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
-import com.juan.consumo_movil.models.PromotionRequest;
+import com.juan.consumo_movil.model.ActividadModel;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -73,7 +71,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     private OnEliminarClickListener onEliminarClickListener;
     private OnEditarClickListener onEditarClickListener;
     private OnDetallesClickListener onDetallesClickListener;
-    private SharedPreferences sharedPreferences;
 
     public interface OnActividadClickListener {
         void onActividadClick(ActividadModel actividadModel);
@@ -101,7 +98,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         this.onEliminarClickListener = onEliminarClickListener;
         this.onEditarClickListener = onEditarClickListener;
         this.onDetallesClickListener = onDetallesClickListener;
-        this.sharedPreferences = context.getSharedPreferences("ActividadPrefs", Context.MODE_PRIVATE);
     }
 
     @Override
@@ -148,7 +144,7 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         notifyDataSetChanged();
     }
 
-    class ActividadViewHolder extends RecyclerView.ViewHolder {
+    static class ActividadViewHolder extends RecyclerView.ViewHolder {
         TextView tvTituloActividad;
         ImageView ivActividadImagen;
         TextView btnVerDetalles;
@@ -168,7 +164,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener) {
             tvTituloActividad.setText(actividadModel.getTitle());
-
             switchPromocion.setChecked(actividadModel.isPromoted());
             switchPromocion.setEnabled(!actividadModel.isPasada());
 
@@ -187,10 +182,8 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (!actividadModel.isPasada()) {
                     String id = actividadModel.getId();
-                    Log.e("ActividadAdapter", "ID actividad = " + id);
                     if (id == null || id.equals("0")) {
-                        Log.e("ActividadAdapter", "Error: ID de actividad no válido");
-                        Toast.makeText(buttonView.getContext(), "Error: ID de actividad no válido", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -198,25 +191,21 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
 
                     PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
-                    Log.d("PromotionRequest", "ID: " + id + ", Request: " + request.toString());
 
                     ApiService apiService = RetrofitClient.getApiService();
-                    Call<ResponseBody> call = apiService.promoteTask(id, request);
-
-                    call.enqueue(new Callback<ResponseBody>() {
+                    apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
                         @Override
                         public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                             if (response.isSuccessful()) {
                                 Toast.makeText(buttonView.getContext(), "Promoción actualizada", Toast.LENGTH_SHORT).show();
                             } else {
-                                Log.e("ActividadAdapter", "Error al actualizar promoción: Código HTTP " + response.code());
                                 Toast.makeText(buttonView.getContext(), "Error al actualizar", Toast.LENGTH_SHORT).show();
                             }
                         }
 
                         @Override
                         public void onFailure(Call<ResponseBody> call, Throwable t) {
-                            Toast.makeText(buttonView.getContext(), "Error de conexión", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(buttonView.getContext(), "Error de red", Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
@@ -250,20 +239,19 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnDetallesClickListener onDetallesClickListener,
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener) {
-            if (recyclerPasadas.getAdapter() == null) {
-                ActividadAdapter adapter = new ActividadAdapter(
-                        recyclerPasadas.getContext(),
-                        pasadas.stream().map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null)).collect(Collectors.toList()),
-                        onActividadClickListener, onEliminarClickListener, onEditarClickListener, onDetallesClickListener
-                );
-                LinearLayoutManager layoutManager = new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false);
-                recyclerPasadas.setLayoutManager(layoutManager);
-                recyclerPasadas.setAdapter(adapter);
-            } else {
-                ((ActividadAdapter) recyclerPasadas.getAdapter()).updateItems(
-                        pasadas.stream().map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null)).collect(Collectors.toList())
-                );
-            }
+
+            List<Item> items = pasadas.stream()
+                    .map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null))
+                    .collect(Collectors.toList());
+
+            ActividadAdapter adapter = new ActividadAdapter(
+                    recyclerPasadas.getContext(),
+                    items,
+                    onActividadClickListener, onEliminarClickListener, onEditarClickListener, onDetallesClickListener
+            );
+
+            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));
+            recyclerPasadas.setAdapter(adapter);
         }
     }
 }
