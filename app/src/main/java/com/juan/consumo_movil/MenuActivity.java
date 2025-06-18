@@ -3,37 +3,32 @@ package com.juan.consumo_movil;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.juan.consumo_movil.ui.actividades.FragmentActPanel;
 import com.juan.consumo_movil.ui.comunidades.ComunidadesFragment;
 import com.juan.consumo_movil.ui.perfil.PerfilFragment;
 import com.juan.consumo_movil.ui.principal.PrincipalFragment;
-import com.juan.consumo_movil.utils.SessionManager;
-
 public class MenuActivity extends AppCompatActivity {
+
     private static final String TAG = "MenuActivity";
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabCreateActivity;
-    private SessionManager sessionManager;
-
-    // Variable para manejar el doble clic
-    private Handler backPressedHandler = new Handler();
-    private Runnable backPressedRunnable;
+    private boolean isMenuEnabled = true; // Flag to prevent rapid taps
+    private static final int MENU_TIMEOUT = 500; // Timeout in milliseconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu);
-
-        sessionManager = new SessionManager(this);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         fabCreateActivity = findViewById(R.id.fabCreateActivity);
@@ -68,6 +63,13 @@ public class MenuActivity extends AppCompatActivity {
 
         // Configurar navegación inferior
         bottomNavigationView.setOnItemSelectedListener(item -> {
+            if (!isMenuEnabled) {
+                return false; // Ignore taps if menu is disabled
+            }
+
+            isMenuEnabled = false; // Disable menu temporarily
+            new Handler(Looper.getMainLooper()).postDelayed(() -> isMenuEnabled = true, MENU_TIMEOUT); // Re-enable menu after timeout
+
             Fragment fragment = null;
             int itemId = item.getItemId();
 
@@ -107,27 +109,6 @@ public class MenuActivity extends AppCompatActivity {
             if (currentFragment instanceof PrincipalFragment) {
                 ((PrincipalFragment) currentFragment).cargarActividades();
             }
-        }
-    }
-
-    // ⬇️ MÉTODO CLAVE PARA EVITAR SALIR CON UN SOLO RETROCESO
-    @Override
-    public void onBackPressed() {
-        if (sessionManager.isLoggedIn()) {
-            // Evitar que el usuario regrese a InicioSesion
-            if (backPressedHandler.hasMessages(0)) {
-                // Segundo clic rápido: Salir de la app
-                backPressedHandler.removeMessages(0);
-                finishAffinity(); // Cierra todas las actividades
-                System.exit(0);
-            } else {
-                // Primer clic: Mostrar mensaje o ignorar
-                Toast.makeText(this, "Presiona nuevamente para salir", Toast.LENGTH_SHORT).show();
-                backPressedHandler.sendEmptyMessageDelayed(0, 2000); // Espera 2 segundos
-            }
-        } else {
-            // Si no está logueado, comportamiento normal
-            super.onBackPressed();
         }
     }
 }
