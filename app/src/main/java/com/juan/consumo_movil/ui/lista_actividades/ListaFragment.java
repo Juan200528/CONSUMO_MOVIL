@@ -13,13 +13,11 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
@@ -27,21 +25,19 @@ import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.Actividad;
 import com.juan.consumo_movil.models.ActividadAdapterLista;
 import com.juan.consumo_movil.utils.SessionManager;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ListaFragment extends Fragment implements ActividadAdapterLista.OnActividadClickListener,
         ActividadAdapterLista.OnDetallesClickListener, ActividadAdapterLista.OnAsistirClickListener {
-    private static final String TAG = "ListaFragment";
+
     private RecyclerView recyclerView;
     private ActividadAdapterLista adapter;
     private List<Actividad> actividadList;
@@ -59,13 +55,11 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_lista, container, false);
 
-        // Inicializar vistas
         recyclerView = view.findViewById(R.id.recyclerLista);
         btnBuscar = view.findViewById(R.id.btnBuscarLupa);
         tvEmpty = view.findViewById(R.id.tvEmptyLista);
         sessionManager = new SessionManager(requireContext());
 
-        // Configurar RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         actividadList = new ArrayList<>();
         listaOriginal = new ArrayList<>();
@@ -73,8 +67,6 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
         recyclerView.setAdapter(adapter);
 
         cargarActividadesDesdeAPI();
-
-        // Listener del botón de búsqueda
         btnBuscar.setOnClickListener(v -> mostrarDialogoBusqueda());
 
         return view;
@@ -88,10 +80,7 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
         }
 
         ApiService api = RetrofitClient.getApiService();
-
-        // ✅ Cambiado a obtenerActividadesOtrosUsuarios
         Call<List<ActividadModel>> call = api.obtenerActividadesOtrosUsuarios("Bearer " + token);
-
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
@@ -108,14 +97,14 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
                     adapter.notifyDataSetChanged();
                     actualizarVisibilidad();
                 } else {
-                    Log.e(TAG, "Error al obtener actividades: " + response.code());
+                    Log.e("ListaFragment", "Error al obtener actividades: " + response.code());
                     Toast.makeText(requireContext(), "Error al cargar actividades", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
-                Log.e(TAG, "Fallo al llamar a la API", t);
+                Log.e("ListaFragment", "Fallo al llamar a la API", t);
                 Toast.makeText(requireContext(), "No se pudo conectar con el servidor", Toast.LENGTH_SHORT).show();
             }
         });
@@ -132,17 +121,14 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
         actividad.setDescripcion(model.getDescription());
         actividad.setLugar(model.getPlace());
         actividad.setFecha(model.getDate());
-
         if (model.getResponsible() != null && !model.getResponsible().isEmpty()) {
             actividad.setResponsables(String.join(", ", model.getResponsible()));
         } else {
             actividad.setResponsables("Sin responsables");
         }
-
         actividad.setPromocionada(model.isPromoted());
-        actividad.setPasada(false); // Puedes calcular esto si lo necesitas
-        actividad.setAsistido(false); // Esto puede venir desde la API o manejarse localmente
-
+        actividad.setPasada(false);
+        actividad.setAsistido(false);
         return actividad;
     }
 
@@ -161,7 +147,6 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
             int idFechaSeleccionada = rgFecha.getCheckedRadioButtonId();
             boolean filtrarProximas = idFechaSeleccionada == R.id.rbFechaProximas;
             boolean filtrarPasadas = idFechaSeleccionada == R.id.rbFechaPasadas;
-
             int idEstadoSeleccionado = rgEstado.getCheckedRadioButtonId();
             boolean filtrarPromocionadas = idEstadoSeleccionado == R.id.rbEstadoPromocionadas;
 
@@ -181,16 +166,11 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
                     (act.getResponsables() != null && act.getResponsables().toLowerCase(Locale.getDefault()).contains(texto.toLowerCase(Locale.getDefault())));
 
             boolean coincideFecha = true;
-            if (proximas) {
-                coincideFecha = esFechaFutura(act.getFecha());
-            } else if (pasadas) {
-                coincideFecha = !esFechaFutura(act.getFecha());
-            }
+            if (proximas) coincideFecha = esFechaFutura(act.getFecha());
+            if (pasadas) coincideFecha = !esFechaFutura(act.getFecha());
 
             boolean coincideEstado = true;
-            if (promocionadas) {
-                coincideEstado = act.isPromocionada();
-            }
+            if (promocionadas) coincideEstado = act.isPromocionada();
 
             if (coincideTexto && coincideFecha && coincideEstado) {
                 actividadList.add(act);
