@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.ui.lista_actividades.ListaFragment;
+import com.juan.consumo_movil.ui.promocionadas.PromocionadasFragment;
 //import com.juan.consumo_movil.ui.actividad_promocionada.PromocionadasFragment;
 //import com.juan.consumo_movil.ui.busca_filtrar_actividades.BuscarFragment;
 //import com.juan.consumo_movil.ui.recordatorio.RecordatorioFragment;
@@ -27,18 +28,18 @@ public class FragmentActPanel extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_actipanel, container, false);
 
-        cardBuscarFiltrar = view.findViewById(R.id.card_buscar_filtrar);
+        //cardBuscarFiltrar = view.findViewById(R.id.card_buscar_filtrar);
         cardListaActividades = view.findViewById(R.id.card_lista_actividades);
         cardPromocionadas = view.findViewById(R.id.card_actividades_promocionadas);
         cardRecordatorio = view.findViewById(R.id.card_recordatorio);
 
       // cardBuscarFiltrar.setOnClickListener(v -> abrirFragmento(new BuscarFragment()));
         cardListaActividades.setOnClickListener(v -> abrirFragmento(new ListaFragment()));
-        //cardPromocionadas.setOnClickListener(v -> abrirFragmento(new PromocionadasFragment()));
+        cardPromocionadas.setOnClickListener(v -> abrirFragmento(new PromocionadasFragment()));
         //cardRecordatorio.setOnClickListener(v -> abrirFragmento(new RecordatorioFragment()));
 
         // Aplicar efecto de "presión" a los LinearLayout simulando botones
-        aplicarEfectoPresion(view.findViewById(R.id.miBotton));
+        //aplicarEfectoPresion(view.findViewById(R.id.miBotton));
         aplicarEfectoPresion(view.findViewById(R.id.miBotton2));
         aplicarEfectoPresion(view.findViewById(R.id.miBotton3));
         aplicarEfectoPresion(view.findViewById(R.id.miBotton4));

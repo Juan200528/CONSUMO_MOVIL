@@ -94,16 +94,7 @@
                         app:backgroundTint="#FF3D00" />
                 </LinearLayout>
 
-                <!-- Botones de acción (compartir) -->
-                <ImageButton
-                    android:id="@+id/btnCompartir"
-                    android:layout_width="34dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Compartir"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/compartir" />
+
             </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

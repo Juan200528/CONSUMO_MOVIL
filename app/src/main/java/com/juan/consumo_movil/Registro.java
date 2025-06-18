@@ -6,15 +6,24 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.method.PasswordTransformationMethod;
+import android.text.style.ClickableSpan;
 import android.util.Patterns;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.widget.TextViewCompat;
 
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
@@ -27,7 +36,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class Registro extends AppCompatActivity {
-
     private EditText fullNameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private Button btnRegistrar;
     private SessionManager sessionManager;
@@ -45,8 +53,37 @@ public class Registro extends AppCompatActivity {
         passwordEditText = findViewById(R.id.passwordEditText);
         confirmPasswordEditText = findViewById(R.id.confirmPasswordEditText);
         btnRegistrar = findViewById(R.id.btnRegistrar);
-
         sessionManager = new SessionManager(this);
+
+        // TextView "¿Ya tienes cuenta? Entrar"
+        TextView loginLinkTextView = findViewById(R.id.loginLinkTextView);
+
+        String originalText = "¿Ya tienes cuenta? Entrar";
+        SpannableString spannableString = new SpannableString(originalText);
+
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                Intent intent = new Intent(Registro.this, InicioSesion.class);
+                startActivity(intent);
+            }
+
+            @Override
+            public void updateDrawState(TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setColor(Color.BLUE); // Color azul para "Entrar"
+                ds.setUnderlineText(false); // Sin subrayado
+            }
+        };
+
+        int startIndex = originalText.indexOf("Entrar");
+        int endIndex = startIndex + "Entrar".length();
+
+        spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        loginLinkTextView.setText(spannableString);
+        loginLinkTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        loginLinkTextView.setHighlightColor(Color.TRANSPARENT); // Sin resaltado al hacer clic
 
         // Configurar campos de contraseña para mostrar/ocultar
         setupPasswordField(passwordEditText);
@@ -62,7 +99,6 @@ public class Registro extends AppCompatActivity {
         editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
         editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
         editText.setCompoundDrawablePadding(10);
-
         editText.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
             if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -113,31 +149,26 @@ public class Registro extends AppCompatActivity {
             fullNameEditText.requestFocus();
             return;
         }
-
         if (TextUtils.isEmpty(email)) {
             emailEditText.setError("Ingrese su correo electrónico");
             emailEditText.requestFocus();
             return;
         }
-
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailEditText.setError("Ingrese un correo válido");
             emailEditText.requestFocus();
             return;
         }
-
         if (TextUtils.isEmpty(password)) {
             passwordEditText.setError("Ingrese una contraseña");
             passwordEditText.requestFocus();
             return;
         }
-
         if (password.length() < 6) {
             passwordEditText.setError("La contraseña debe tener al menos 6 caracteres");
             passwordEditText.requestFocus();
             return;
         }
-
         if (!password.equals(confirmPassword)) {
             confirmPasswordEditText.setError("Las contraseñas no coinciden");
             confirmPasswordEditText.requestFocus();
@@ -151,7 +182,6 @@ public class Registro extends AppCompatActivity {
 
         ApiService apiService = RetrofitClient.getApiService();
         Call<LoginResponse> call = apiService.register(user);
-
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
@@ -186,11 +216,9 @@ public class Registro extends AppCompatActivity {
                     );
 
                     Toast.makeText(Registro.this, "Registro exitoso", Toast.LENGTH_SHORT).show();
-
                     Intent intent = new Intent(Registro.this, MenuActivity.class);
                     startActivity(intent);
                     finish();
-
                 } else {
                     try {
                         String errorBody = response.errorBody() != null ? response.errorBody().string() : "Error desconocido";

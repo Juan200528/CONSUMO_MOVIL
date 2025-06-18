@@ -15,7 +15,6 @@ import com.juan.consumo_movil.utils.SessionManager;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import retrofit2.Call;
@@ -27,14 +26,21 @@ public class ListaViewModel extends ViewModel {
     private static final String TAG = "ListaViewModel";
 
     private final MutableLiveData<List<Actividad>> actividades = new MutableLiveData<>();
+    private String token; // Almacenamos el token una sola vez
 
     public LiveData<List<Actividad>> getActividades() {
         return actividades;
     }
 
+
     public void cargarActividadesDesdeApi(Context context) {
+        if (actividades.getValue() != null && !actividades.getValue().isEmpty()) {
+            // Ya tenemos datos, no recargamos
+            return;
+        }
+
         SessionManager sessionManager = new SessionManager(context);
-        String token = sessionManager.getToken();
+        token = sessionManager.getToken();
 
         if (token == null || token.isEmpty()) {
             Log.e(TAG, "Token no disponible");
@@ -43,7 +49,7 @@ public class ListaViewModel extends ViewModel {
         }
 
         ApiService api = RetrofitClient.getApiService();
-        Call<List<ActividadModel>> call = api.obtenerActividades("Bearer " + token);
+        Call<List<ActividadModel>> call = api.obtenerActividadesOtrosUsuarios("Bearer " + token);
 
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
@@ -89,8 +95,18 @@ public class ListaViewModel extends ViewModel {
             }
 
             actividad.setPromocionada(model.isPromoted());
-            actividad.setPasada(false); // Puedes calcular esto según la fecha si lo deseas
-            actividad.setAsistido(false); // Esto puede venir desde la API o manejarse localmente
+
+            // Calcular si es pasada o no
+            boolean esPasada = false;
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                if (model.getDate() != null && !model.getDate().isEmpty()) {
+                    esPasada = sdf.parse(model.getDate()).before(new java.util.Date());
+                }
+            } catch (Exception ignored) {}
+
+            actividad.setPasada(esPasada);
+            actividad.setAsistido(false); // Esto puede venir desde la API más adelante
             actividad.setImagenRuta(null); // O usa URL si recibes imágenes desde la API
 
             lista.add(actividad);

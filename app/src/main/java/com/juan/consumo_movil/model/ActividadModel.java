@@ -1,7 +1,6 @@
 package com.juan.consumo_movil.model;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
 
 public class ActividadModel {
@@ -24,57 +23,16 @@ public class ActividadModel {
     @SerializedName("responsible")
     private List<String> responsible;
 
-    @SerializedName("isPromoted")
-    private boolean isPromoted;
+    @SerializedName("promocionada")
+    private boolean promocionada;
 
-    @SerializedName("promotion")
-    private Promotion promotion;
+    @SerializedName("asistido")
+    private boolean asistido;
 
-    // Opcional: si usas datos del usuario
-    @SerializedName("user")
-    private User user;
+    @SerializedName("pasada")
+    private boolean pasada;
 
-    public static class User {
-        @SerializedName("_id")
-        private String id;
-
-        @SerializedName("email")
-        private String email;
-
-        public String getId() {
-            return id;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-    }
-
-    public static class Promotion {
-        @SerializedName("startDate")
-        private String startDate;
-
-        @SerializedName("endDate")
-        private String endDate;
-
-        public String getStartDate() {
-            return startDate;
-        }
-
-        public void setStartDate(String startDate) {
-            this.startDate = startDate;
-        }
-
-        public String getEndDate() {
-            return endDate;
-        }
-
-        public void setEndDate(String endDate) {
-            this.endDate = endDate;
-        }
-    }
-
-    // --- Getters y setters ---
+    // --- Getters y Setters ---
 
     public String getId() {
         return id;
@@ -125,26 +83,26 @@ public class ActividadModel {
     }
 
     public boolean isPromoted() {
-        return isPromoted;
+        return promocionada;
     }
 
-    public void setPromoted(boolean promoted) {
-        isPromoted = promoted;
+    public void setPromocionada(boolean promocionada) {
+        this.promocionada = promocionada;
     }
 
-    public Promotion getPromotion() {
-        return promotion;
+    public boolean isAsistido() {
+        return asistido;
     }
 
-    public void setPromotion(Promotion promotion) {
-        this.promotion = promotion;
+    public void setAsistido(boolean asistido) {
+        this.asistido = asistido;
     }
 
-    public User getUser() {
-        return user;
+    public boolean isPasada() {
+        return pasada;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setPasada(boolean pasada) {
+        this.pasada = pasada;
     }
 }
