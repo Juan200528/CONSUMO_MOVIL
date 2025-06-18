@@ -1,6 +1,5 @@
 package com.juan.consumo_movil.api;
 
-//import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
@@ -54,24 +53,38 @@ public interface ApiService {
 
     // 🧑‍🤝‍🧑 Obtener lista de actividades de otros usuarios
     @GET("/api/tasks/others")
-    Call<List<ActividadModel>>obtenerActividadesOtrosUsuarios(@Header("Authorization") String token);
+    Call<List<ActividadModel>> obtenerActividadesOtrosUsuarios(@Header("Authorization") String token);
 
-
-
-    // ❌ Eliminar una actividad por ID
-    @DELETE("api/tasks/{id}")
-    Call<ResponseBody> deleteTask(
+    // ✏️ Actualizar actividad
+    @PUT("api/tasks/{id}")
+    Call<ActividadModel> actualizarActividad(
+            @Header("Authorization") String token,
             @Path("id") String id,
-            @Header("Authorization") String token
+            @Body ActividadModel actividad
     );
+
+    // ❌ Eliminar actividad
+    @DELETE("api/tasks/{id}")
+    Call<Void> eliminarActividad(
+            @Header("Authorization") String token,
+            @Path("id") String id
+    );
+
+    // 🎯 Obtener actividades promocionadas
     @GET("api/tasks/promoted")
     Call<List<ActividadModel>> getPromotedTasks();
 
+    // 📣 Promocionar actividad (POST)
     @POST("api/tasks/{id}/promote")
     Call<Void> promoteTask(
             @Header("Authorization") String token,
             @Path("id") String actividadId
     );
+
+    // 📝 Promocionar con configuración adicional (PATCH)
     @PATCH("api/tasks/{id}/promotion")
-    Call<ResponseBody> promoteTask(@Path("id") String id, @Body PromotionRequest promotionRequest);
+    Call<ResponseBody> promoteTask(
+            @Path("id") String id,
+            @Body PromotionRequest promotionRequest
+    );
 }

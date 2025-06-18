@@ -83,8 +83,9 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         void onEditarClick(ActividadModel actividadModel);
     }
 
+    // ✅ Interfaz actualizada para recibir ambos parámetros
     public interface OnDetallesClickListener {
-        void onDetallesClick(ActividadModel actividadModel);
+        void onDetallesClick(ActividadModel actividadModel, View view);
     }
 
     public ActividadAdapter(Context context, List<Item> itemList,
@@ -122,7 +123,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Item item = itemList.get(position);
-
         if (holder instanceof ActividadViewHolder) {
             ((ActividadViewHolder) holder).bind(item.getActividadModel(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
         } else if (holder instanceof TituloViewHolder) {
@@ -166,29 +166,45 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             switchPromocion.setChecked(actividadModel.isPromoted());
             switchPromocion.setEnabled(!actividadModel.isPasada());
 
+            // Clic en tarjeta completa
             itemView.setOnClickListener(v -> {
                 if (onActividadClickListener != null) {
                     onActividadClickListener.onActividadClick(actividadModel);
                 }
             });
 
+            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 if (onDetallesClickListener != null) {
-                    onDetallesClickListener.onDetallesClick(actividadModel);
+                    onDetallesClickListener.onDetallesClick(actividadModel, v);
                 }
             });
 
+            // Botón Editar
+            itemView.findViewById(R.id.btnEditar).setOnClickListener(v -> {
+                if (onEditarClickListener != null) {
+                    onEditarClickListener.onEditarClick(actividadModel);
+                }
+            });
+
+            // Botón Eliminar
+            itemView.findViewById(R.id.btnEliminar).setOnClickListener(v -> {
+                if (onEliminarClickListener != null) {
+                    onEliminarClickListener.onEliminarClick(actividadModel);
+                }
+            });
+
+            // Acción del Switch Promocionar
             switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (!actividadModel.isPasada()) {
                     String id = actividadModel.getId();
-                    if (id == null || id.equals("0")) {
+                    if (id == null || id.isEmpty() || id.equals("0")) {
                         Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
                     String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
                     String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
-
                     PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
 
                     ApiService apiService = RetrofitClient.getApiService();
@@ -204,7 +220,7 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
                         @Override
                         public void onFailure(Call<ResponseBody> call, Throwable t) {
-                            Toast.makeText(buttonView.getContext(), "Error de red", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(buttonView.getContext(), "Fallo de red", Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
@@ -238,7 +254,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnDetallesClickListener onDetallesClickListener,
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener) {
-
             List<Item> items = pasadas.stream()
                     .map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null))
                     .collect(Collectors.toList());
@@ -246,7 +261,10 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             ActividadAdapter adapter = new ActividadAdapter(
                     recyclerPasadas.getContext(),
                     items,
-                    onActividadClickListener, onEliminarClickListener, onEditarClickListener, onDetallesClickListener
+                    onActividadClickListener,
+                    onEliminarClickListener,
+                    onEditarClickListener,
+                    onDetallesClickListener
             );
 
             recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));

@@ -32,7 +32,9 @@ public class ListaViewModel extends ViewModel {
         return actividades;
     }
 
-
+    /**
+     * Carga las actividades desde la API solo si no están ya cargadas
+     */
     public void cargarActividadesDesdeApi(Context context) {
         if (actividades.getValue() != null && !actividades.getValue().isEmpty()) {
             // Ya tenemos datos, no recargamos
