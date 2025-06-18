@@ -46,6 +46,7 @@ public class InicioSesion extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         RetrofitClient.init(getApplicationContext());
 
+        // Verificar si ya hay sesión iniciada
         if (sessionManager.isLoggedIn()) {
             redirigirAMenu();
             return;
@@ -215,7 +216,8 @@ public class InicioSesion extends AppCompatActivity {
 
     private void redirigirAMenu() {
         Intent intent = new Intent(InicioSesion.this, MenuActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
-        finish();
+        finish(); // Cierra esta actividad para que no regrese por el back
     }
 }

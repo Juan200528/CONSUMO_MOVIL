@@ -2,8 +2,11 @@ package com.juan.consumo_movil;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
@@ -13,16 +16,24 @@ import com.juan.consumo_movil.ui.actividades.FragmentActPanel;
 import com.juan.consumo_movil.ui.comunidades.ComunidadesFragment;
 import com.juan.consumo_movil.ui.perfil.PerfilFragment;
 import com.juan.consumo_movil.ui.principal.PrincipalFragment;
+import com.juan.consumo_movil.utils.SessionManager;
 
 public class MenuActivity extends AppCompatActivity {
     private static final String TAG = "MenuActivity";
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabCreateActivity;
+    private SessionManager sessionManager;
+
+    // Variable para manejar el doble clic
+    private Handler backPressedHandler = new Handler();
+    private Runnable backPressedRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu);
+
+        sessionManager = new SessionManager(this);
 
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         fabCreateActivity = findViewById(R.id.fabCreateActivity);
@@ -96,6 +107,27 @@ public class MenuActivity extends AppCompatActivity {
             if (currentFragment instanceof PrincipalFragment) {
                 ((PrincipalFragment) currentFragment).cargarActividades();
             }
+        }
+    }
+
+    // ⬇️ MÉTODO CLAVE PARA EVITAR SALIR CON UN SOLO RETROCESO
+    @Override
+    public void onBackPressed() {
+        if (sessionManager.isLoggedIn()) {
+            // Evitar que el usuario regrese a InicioSesion
+            if (backPressedHandler.hasMessages(0)) {
+                // Segundo clic rápido: Salir de la app
+                backPressedHandler.removeMessages(0);
+                finishAffinity(); // Cierra todas las actividades
+                System.exit(0);
+            } else {
+                // Primer clic: Mostrar mensaje o ignorar
+                Toast.makeText(this, "Presiona nuevamente para salir", Toast.LENGTH_SHORT).show();
+                backPressedHandler.sendEmptyMessageDelayed(0, 2000); // Espera 2 segundos
+            }
+        } else {
+            // Si no está logueado, comportamiento normal
+            super.onBackPressed();
         }
     }
 }

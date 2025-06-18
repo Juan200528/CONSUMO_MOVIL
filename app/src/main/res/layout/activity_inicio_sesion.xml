@@ -85,16 +85,17 @@
     <!-- Espacio vertical -->
     <Space
         android:layout_width="0dp"
-        android:layout_height="32dp" />
+        android:layout_height="130dp" />
 
     <!-- Mensaje Bienvenida -->
     <TextView
         android:id="@+id/tvBienvenida"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:gravity="center"
         android:text="Bienvenidos\nGracias por visitar PanasCOOP,\ninicia sesión en tu cuenta."
         android:textAlignment="center"
-        android:gravity="center"
         android:textColor="@color/mensajes"
-        android:textSize="12sp"/>
+        android:textSize="12sp" />
 </LinearLayout>
