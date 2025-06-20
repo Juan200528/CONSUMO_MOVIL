@@ -108,8 +108,8 @@ public class ListaViewModel extends ViewModel {
             } catch (Exception ignored) {}
 
             actividad.setPasada(esPasada);
-            actividad.setAsistido(false); // Esto puede venir desde la API más adelante
-            actividad.setImagenRuta(null); // O usa URL si recibes imágenes desde la API
+            actividad.setAsistido(false);
+            actividad.setImagenRuta(null);
 
             lista.add(actividad);
         }

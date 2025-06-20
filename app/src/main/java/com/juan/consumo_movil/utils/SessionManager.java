@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class SessionManager {
+    private static SessionManager instance;
 
     private static final String PREF_NAME = "user_session";
     private static final String KEY_USER_ID = "user_id";
@@ -16,10 +17,27 @@ public class SessionManager {
 
     private final SharedPreferences sharedPreferences;
 
+    // Constructor privado (para Singleton)
     public SessionManager(Context context) {
         sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
+    // Método para inicializar la instancia
+    public static synchronized void init(Context context) {
+        if (instance == null) {
+            instance = new SessionManager(context);
+        }
+    }
+
+    // Método para obtener la instancia
+    public static synchronized SessionManager getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("SessionManager no ha sido inicializado. Llama a SessionManager.init(context) primero.");
+        }
+        return instance;
+    }
+
+    // Guardar datos
     public void guardarSesion(String id, String username, String email, String phone) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(KEY_USER_ID, id);
@@ -42,6 +60,7 @@ public class SessionManager {
         editor.apply();
     }
 
+    // Obtener datos
     public String getUserId() {
         return sharedPreferences.getString(KEY_USER_ID, null);
     }
@@ -76,7 +95,7 @@ public class SessionManager {
         editor.apply();
     }
 
-    // ✅ Nuevo método agregado
+    // Nuevo método: Devuelve el token con prefijo Bearer
     public String fetchAuthToken() {
         String token = getToken();
         return (token != null && !token.isEmpty()) ? "Bearer " + token : null;

@@ -13,10 +13,12 @@ import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Headers;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface ApiService {
 
@@ -54,6 +56,13 @@ public interface ApiService {
     // 🧑‍🤝‍🧑 Obtener lista de actividades de otros usuarios
     @GET("/api/tasks/others")
     Call<List<ActividadModel>> obtenerActividadesOtrosUsuarios(@Header("Authorization") String token);
+
+    // 🔍 Búsqueda remota
+    @GET("/api/tasks/search")
+    Call<List<ActividadModel>> searchTasks(
+            @Header("Authorization") String token,
+            @Query("query") String query
+    );
 
     // ✏️ Actualizar actividad
     @PUT("api/tasks/{id}")

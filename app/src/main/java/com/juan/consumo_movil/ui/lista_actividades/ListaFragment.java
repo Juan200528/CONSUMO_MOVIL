@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -41,6 +42,7 @@ import retrofit2.Response;
 
 public class ListaFragment extends Fragment implements ActividadAdapterLista.OnActividadClickListener,
         ActividadAdapterLista.OnDetallesClickListener, ActividadAdapterLista.OnAsistirClickListener {
+
     private static final String TAG = "ListaFragment";
     private RecyclerView recyclerView;
     private ActividadAdapterLista adapter;
@@ -63,12 +65,13 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
         recyclerView = view.findViewById(R.id.recyclerLista);
         btnBuscar = view.findViewById(R.id.btnBuscarLupa);
         tvEmpty = view.findViewById(R.id.tvEmptyLista);
-        sessionManager = new SessionManager(requireContext());
+        sessionManager = SessionManager.getInstance(); // ✅ Uso del Singleton
 
         // Configurar RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         actividadList = new ArrayList<>();
         listaOriginal = new ArrayList<>();
+
         adapter = new ActividadAdapterLista(actividadList, this, this, this);
         recyclerView.setAdapter(adapter);
 
@@ -89,7 +92,6 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
 
         ApiService api = RetrofitClient.getApiService();
 
-        // ✅ Cambiado a obtenerActividadesOtrosUsuarios
         Call<List<ActividadModel>> call = api.obtenerActividadesOtrosUsuarios("Bearer " + token);
 
         call.enqueue(new Callback<List<ActividadModel>>() {
@@ -99,13 +101,14 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
                     List<ActividadModel> modelos = response.body();
                     List<Actividad> listaConvertida = new ArrayList<>();
                     for (ActividadModel model : modelos) {
-                        listaConvertida.add(convertirAPIaActividad(model));
+                        Actividad actividad = convertirAPIaActividad(model);
+                        listaConvertida.add(actividad);
                     }
                     listaOriginal.clear();
                     listaOriginal.addAll(listaConvertida);
-                    actividadList.clear();
-                    actividadList.addAll(listaOriginal);
-                    adapter.notifyDataSetChanged();
+
+                    // 🔥 Carga solo actividades ajenas al inicio
+                    adapter.cargarSoloAjenas(listaOriginal);
                     actualizarVisibilidad();
                 } else {
                     Log.e(TAG, "Error al obtener actividades: " + response.code());
@@ -140,8 +143,14 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
         }
 
         actividad.setPromocionada(model.isPromoted());
-        actividad.setPasada(false); // Puedes calcular esto si lo necesitas
-        actividad.setAsistido(false); // Esto puede venir desde la API o manejarse localmente
+        actividad.setPasada(model.isPasada());
+        actividad.setAsistido(false); // Esto puede venir desde otro endpoint o manejarse localmente
+
+        // 🔥 Copiar id del creador desde el modelo de la API
+        if (model.getUser() != null && model.getUser().getId() != null) {
+            actividad.setIdCreador(model.getUser().getId());
+            Log.d("ACTIVIDAD", "ID Creador: " + model.getUser().getId());
+        }
 
         return actividad;
     }
@@ -173,33 +182,87 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
     }
 
     private void aplicarFiltros(String texto, boolean proximas, boolean pasadas, boolean promocionadas) {
-        actividadList.clear();
-        for (Actividad act : listaOriginal) {
-            boolean coincideTexto = texto.isEmpty() ||
-                    act.getTitulo().toLowerCase(Locale.getDefault()).contains(texto.toLowerCase(Locale.getDefault())) ||
-                    (act.getDescripcion() != null && act.getDescripcion().toLowerCase(Locale.getDefault()).contains(texto.toLowerCase(Locale.getDefault()))) ||
-                    (act.getResponsables() != null && act.getResponsables().toLowerCase(Locale.getDefault()).contains(texto.toLowerCase(Locale.getDefault())));
+        if (texto.isEmpty()) {
+            // ✅ Si no hay texto, filtramos localmente
+            List<Actividad> resultados = new ArrayList<>();
 
-            boolean coincideFecha = true;
-            if (proximas) {
-                coincideFecha = esFechaFutura(act.getFecha());
-            } else if (pasadas) {
-                coincideFecha = !esFechaFutura(act.getFecha());
+            for (Actividad act : listaOriginal) {
+                boolean coincideFecha = true;
+                if (proximas) {
+                    coincideFecha = esFechaFutura(act.getFecha());
+                } else if (pasadas) {
+                    coincideFecha = !esFechaFutura(act.getFecha());
+                }
+
+                boolean coincideEstado = true;
+                if (promocionadas) {
+                    coincideEstado = act.isPromocionada();
+                }
+
+                if (coincideFecha && coincideEstado) {
+                    resultados.add(act);
+                }
             }
 
-            boolean coincideEstado = true;
-            if (promocionadas) {
-                coincideEstado = act.isPromocionada();
-            }
-
-            if (coincideTexto && coincideFecha && coincideEstado) {
-                actividadList.add(act);
-            }
+            adapter.updateItems(resultados);
+            Toast.makeText(requireContext(), "Mostrando " + adapter.getItemCount() + " resultado(s)", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        adapter.notifyDataSetChanged();
-        actualizarVisibilidad();
-        Toast.makeText(requireContext(), "Mostrando " + actividadList.size() + " resultados", Toast.LENGTH_SHORT).show();
+        // 🔍 Si hay texto, hacemos búsqueda remota
+        String token = SessionManager.getInstance().fetchAuthToken(); // Debe devolver "Bearer <token>"
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(requireContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ApiService api = RetrofitClient.getApiService();
+
+        // 🔥 Llamada al servidor
+        Call<List<ActividadModel>> call = api.searchTasks(token, texto);
+        call.enqueue(new Callback<List<ActividadModel>>() {
+            @Override
+            public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<ActividadModel> modelos = response.body();
+                    List<Actividad> resultados = new ArrayList<>();
+
+                    for (ActividadModel model : modelos) {
+                        Actividad act = convertirAPIaActividad(model);
+
+                        // ✅ Comparación exacta del título
+                        boolean coincideTexto = act.getTitulo().equalsIgnoreCase(texto.trim());
+
+                        boolean coincideFecha = true;
+                        if (proximas) {
+                            coincideFecha = esFechaFutura(act.getFecha());
+                        } else if (pasadas) {
+                            coincideFecha = !esFechaFutura(act.getFecha());
+                        }
+
+                        boolean coincideEstado = true;
+                        if (promocionadas) {
+                            coincideEstado = act.isPromocionada();
+                        }
+
+                        if (coincideTexto && coincideFecha && coincideEstado) {
+                            resultados.add(act);
+                        }
+                    }
+
+                    adapter.updateItems(resultados);
+                    Toast.makeText(requireContext(), "Mostrando " + adapter.getItemCount() + " resultado(s)", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), "No se encontraron coincidencias", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
+                Log.e("BuscarError", "Error en búsqueda remota", t);
+                Toast.makeText(requireContext(), "Fallo al buscar actividades", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private boolean esFechaFutura(String fechaStr) {
@@ -214,7 +277,7 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
     }
 
     private void actualizarVisibilidad() {
-        if (actividadList.isEmpty()) {
+        if (adapter.getItemCount() == 0) {
             recyclerView.setVisibility(View.GONE);
             tvEmpty.setVisibility(View.VISIBLE);
         } else {

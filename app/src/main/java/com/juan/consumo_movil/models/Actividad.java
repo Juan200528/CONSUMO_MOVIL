@@ -14,6 +14,9 @@ public class Actividad {
     private boolean asistido;
     private boolean pasada;
 
+    // ✅ Campo agregado para saber si la actividad es mía
+    private boolean esMia;
+
     public int getId() {
         return id;
     }
@@ -109,4 +112,6 @@ public class Actividad {
     public void setPasada(boolean pasada) {
         this.pasada = pasada;
     }
+
+
 }

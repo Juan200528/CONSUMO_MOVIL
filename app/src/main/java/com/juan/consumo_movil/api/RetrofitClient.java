@@ -15,7 +15,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitClient {
 
     private static final String BASE_URL = "https://backend-nrpu.onrender.com/";
-    private static volatile Retrofit retrofit = null; // Ensure thread safety
+    private static volatile Retrofit retrofit = null; // Asegúrate de mantener esto para thread safety
     private static volatile ApiService apiService = null;
     private static Context appContext;
 
@@ -28,6 +28,9 @@ public class RetrofitClient {
             throw new IllegalArgumentException("Context no puede ser nulo.");
         }
         appContext = context.getApplicationContext();
+
+        // ✅ Inicializamos SessionManager aquí también
+        SessionManager.init(appContext); // 👈 Llamada al método init del SessionManager
     }
 
     /**
@@ -39,18 +42,21 @@ public class RetrofitClient {
             synchronized (RetrofitClient.class) {
                 if (retrofit == null) { // Double-checked locking
                     if (appContext == null) {
-                        throw new IllegalStateException("RetrofitClient no ha sido inicializado. Llama a RetrofitClient.init(context) antes de usarlo.");
+                        throw new IllegalStateException(
+                                "RetrofitClient no ha sido inicializado. Llama a RetrofitClient.init(context) antes de usarlo."
+                        );
                     }
 
-                    SessionManager sessionManager = new SessionManager(appContext);
+                    // ✅ Usamos el Singleton de SessionManager
+                    SessionManager sessionManager = SessionManager.getInstance(); // ✅ No usamos new SessionManager()
 
                     HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
                     loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
                     OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                            .addInterceptor(new AuthInterceptor(sessionManager)) // Añade token en Authorization header
+                            .addInterceptor(new AuthInterceptor(sessionManager)) // Ahora sí funciona
                             .addInterceptor(loggingInterceptor)
-                            .connectTimeout(60, TimeUnit.SECONDS)   // Timeout aumentado a 60 segundos
+                            .connectTimeout(60, TimeUnit.SECONDS)
                             .readTimeout(60, TimeUnit.SECONDS)
                             .writeTimeout(60, TimeUnit.SECONDS)
                             .build();

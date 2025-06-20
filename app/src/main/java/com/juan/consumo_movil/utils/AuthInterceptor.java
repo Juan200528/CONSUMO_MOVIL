@@ -6,23 +6,34 @@ import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
 
+/**
+ * Interceptor para añadir el encabezado de autenticación a las llamadas API.
+ */
 public class AuthInterceptor implements Interceptor {
-    private SessionManager sessionManager;
+
+    private final SessionManager sessionManager;
 
     public AuthInterceptor(SessionManager sessionManager) {
+        if (sessionManager == null) {
+            throw new IllegalArgumentException("SessionManager no puede ser nulo");
+        }
         this.sessionManager = sessionManager;
     }
 
     @Override
     public Response intercept(Chain chain) throws IOException {
-        Request original = chain.request();
+        Request originalRequest = chain.request();
+
         String token = sessionManager.getToken();
+
         if (token != null && !token.isEmpty()) {
-            Request newReq = original.newBuilder()
+            Request request = originalRequest.newBuilder()
                     .header("Authorization", "Bearer " + token)
                     .build();
-            return chain.proceed(newReq);
+
+            return chain.proceed(request);
         }
-        return chain.proceed(original);
+
+        return chain.proceed(originalRequest);
     }
 }
