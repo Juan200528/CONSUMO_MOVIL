@@ -84,7 +84,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             cargarImagen(actividad, actividadHolder.ivActividadImagen);
 
             actividadHolder.itemView.setOnClickListener(v -> clickListener.onActividadClick(actividad));
-            actividadHolder.btnCompartir.setOnClickListener(v -> compartirActividad(actividad, v.getContext()));
+
             actividadHolder.btnVerDetalles.setOnClickListener(v -> {
                 mostrarDialogoDetalles(actividad, v);
                 detallesListener.onDetallesClick(actividad);
@@ -106,7 +106,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
                 // Aquí puedes llamar a la API para desasistir
             });
 
-            asistirHolder.btnCompartir.setOnClickListener(v -> compartirActividad(actividad, v.getContext()));
+
             asistirHolder.itemView.setOnClickListener(v -> clickListener.onActividadClick(actividad));
         }
     }
@@ -124,13 +124,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         }
     }
 
-    private void compartirActividad(Actividad actividad, Context context) {
-        Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("text/plain");
-        shareIntent.putExtra(Intent.EXTRA_SUBJECT, actividad.getTitulo());
-        shareIntent.putExtra(Intent.EXTRA_TEXT, "¡Mira esta actividad: " + actividad.getTitulo() + "\n" + actividad.getDescripcion());
-        context.startActivity(Intent.createChooser(shareIntent, "Compartir actividad"));
-    }
+
 
     private void mostrarDialogoDetalles(Actividad actividad, View itemView) {
         Dialog dialog = new Dialog(itemView.getContext());
@@ -187,7 +181,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     static class ActividadViewHolder extends RecyclerView.ViewHolder {
         TextView tvTituloActividad;
         ImageView ivActividadImagen;
-        ImageButton btnCompartir;
+
         Button btnVerDetalles;
         Button btnAsistirActividad;
 
@@ -195,7 +189,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             super(itemView);
             tvTituloActividad = itemView.findViewById(R.id.tvTituloActividadLista);
             ivActividadImagen = itemView.findViewById(R.id.ivActividadImagenLista);
-            btnCompartir = itemView.findViewById(R.id.btnCompartir);
+
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             btnAsistirActividad = itemView.findViewById(R.id.btnAsistirActividad);
         }
@@ -207,7 +201,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         ImageView ivActividadImagen;
         Button btnVerDetalles;
         Button btnCancelarAsistencia;
-        ImageButton btnCompartir;
+
 
         public AsistirViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -215,7 +209,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             ivActividadImagen = itemView.findViewById(R.id.ivActividadImagenAsistir);
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             btnCancelarAsistencia = itemView.findViewById(R.id.btnCancelarAsistencia);
-            btnCompartir = itemView.findViewById(R.id.btnCompartir);
+
         }
     }
 }

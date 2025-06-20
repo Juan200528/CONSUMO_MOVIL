@@ -31,24 +31,19 @@
         android:layout_marginTop="8dp"
         android:textColor="@color/colorN"/>
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <View
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="2"/>
-    </LinearLayout>
+    <!-- Espacio vertical -->
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="24dp" />
 
     <!-- Campo Correo -->
     <EditText
         android:id="@+id/etCorreo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Correo electronico"
+        android:hint="Correo electrónico"
         android:inputType="textEmailAddress"
         android:background="@drawable/edit_text_border"
-        android:layout_marginTop="24dp"
         android:padding="12dp" />
 
     <!-- Campo Contraseña -->
@@ -62,14 +57,10 @@
         android:layout_marginTop="12dp"
         android:padding="12dp" />
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <View
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="2"/>
-    </LinearLayout>
+    <!-- Espacio vertical -->
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="16dp" />
 
     <!-- Botón Iniciar Sesión -->
     <androidx.appcompat.widget.AppCompatButton
@@ -91,24 +82,20 @@
         android:layout_marginTop="16dp"
         android:textAlignment="center"/>
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <View
-            android:layout_width="0dp"
-            android:layout_height="80dp"
-            android:layout_weight="2"/>
-    </LinearLayout>
+    <!-- Espacio vertical -->
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="130dp" />
 
     <!-- Mensaje Bienvenida -->
     <TextView
         android:id="@+id/tvBienvenida"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:gravity="center"
         android:text="Bienvenidos\nGracias por visitar PanasCOOP,\ninicia sesión en tu cuenta."
         android:textAlignment="center"
-        android:gravity="center"
-        android:layout_marginTop="48dp"
         android:textColor="@color/mensajes"
-        android:textSize="12sp"/>
+        android:textSize="12sp" />
 </LinearLayout>

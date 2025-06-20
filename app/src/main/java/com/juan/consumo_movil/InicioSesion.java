@@ -5,10 +5,16 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.text.method.PasswordTransformationMethod;
+import android.text.style.ClickableSpan;
 import android.util.Patterns;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -27,7 +33,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class InicioSesion extends AppCompatActivity {
-
     private EditText etCorreo, etContrasena;
     private Button btnIniciarSesion;
     private TextView tvRegistrarse;
@@ -41,6 +46,7 @@ public class InicioSesion extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         RetrofitClient.init(getApplicationContext());
 
+        // Verificar si ya hay sesión iniciada
         if (sessionManager.isLoggedIn()) {
             redirigirAMenu();
             return;
@@ -60,15 +66,37 @@ public class InicioSesion extends AppCompatActivity {
 
         btnIniciarSesion.setOnClickListener(v -> iniciarSesion());
 
-        tvRegistrarse.setOnClickListener(v -> {
-            Intent intent = new Intent(InicioSesion.this, Registro.class);
-            startActivity(intent);
-        });
-
         String emailRegistrado = getIntent().getStringExtra("email_registrado");
         if (emailRegistrado != null) {
             etCorreo.setText(emailRegistrado);
         }
+
+        // Aplicar estilo y acción al TextView "Regístrate"
+        String originalText = "¿No tienes una cuenta? Regístrate";
+        SpannableString spannableString = new SpannableString(originalText);
+
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                Intent intent = new Intent(InicioSesion.this, Registro.class);
+                startActivity(intent);
+            }
+
+            @Override
+            public void updateDrawState(TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setColor(Color.BLUE); // Color azul para "Regístrate"
+                ds.setUnderlineText(false); // Opcional: quitar subrayado
+            }
+        };
+
+        int startIndex = originalText.indexOf("Regístrate");
+        int endIndex = startIndex + "Regístrate".length();
+
+        spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        tvRegistrarse.setText(spannableString);
+        tvRegistrarse.setMovementMethod(LinkMovementMethod.getInstance());
+        tvRegistrarse.setHighlightColor(Color.TRANSPARENT); // Quitar resaltado al hacer clic
     }
 
     private void setupPasswordToggle(final EditText editText) {
@@ -141,14 +169,13 @@ public class InicioSesion extends AppCompatActivity {
 
         ApiService apiService = RetrofitClient.getApiService();
         Call<LoginResponse> call = apiService.login(user);
-
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
-
                     String tokenCookie = null;
+
                     for (int i = 0; i < response.headers().size(); i++) {
                         String name = response.headers().name(i);
                         String value = response.headers().value(i);
@@ -175,7 +202,6 @@ public class InicioSesion extends AppCompatActivity {
 
                     Toast.makeText(InicioSesion.this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show();
                     redirigirAMenu();
-
                 } else {
                     Toast.makeText(InicioSesion.this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
                 }
@@ -190,7 +216,8 @@ public class InicioSesion extends AppCompatActivity {
 
     private void redirigirAMenu() {
         Intent intent = new Intent(InicioSesion.this, MenuActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
-        finish();
+        finish(); // Cierra esta actividad para que no regrese por el back
     }
 }
