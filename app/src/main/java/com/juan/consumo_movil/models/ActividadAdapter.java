@@ -1,256 +1,132 @@
 package com.juan.consumo_movil.models;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.Switch;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.juan.consumo_movil.R;
-import com.juan.consumo_movil.api.ApiService;
-import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
+import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
-import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
-public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class ActividadAdapter extends RecyclerView.Adapter<ActividadAdapter.ActividadViewHolder> {
 
     public static class Item {
-        public static final int TYPE_ACTIVIDAD = 1;
-        public static final int TYPE_TITULO = 2;
-        public static final int TYPE_PASADAS = 3;
+        public static final int TYPE_ACTIVIDAD = 0;
+        public static final int TYPE_TITULO = 1;
+        public static final int TYPE_PASADAS = 2;
 
-        private final int type;
-        private final ActividadModel actividadModel;
-        private final String titulo;
-        private final List<ActividadModel> actividadesPasadas;
+        public int type;
+        public ActividadModel actividad;
+        public String titulo;
+        public List<ActividadModel> actividadesPasadas;
 
-        public Item(int type, ActividadModel actividadModel, String titulo, List<ActividadModel> actividadesPasadas) {
+        public Item(int type, ActividadModel actividad, String titulo, List<ActividadModel> actividadesPasadas) {
             this.type = type;
-            this.actividadModel = actividadModel;
+            this.actividad = actividad;
             this.titulo = titulo;
             this.actividadesPasadas = actividadesPasadas;
         }
-
-        public int getType() {
-            return type;
-        }
-
-        public ActividadModel getActividadModel() {
-            return actividadModel;
-        }
-
-        public String getTitulo() {
-            return titulo;
-        }
-
-        public List<ActividadModel> getActividadesPasadas() {
-            return actividadesPasadas;
-        }
     }
 
-    private List<Item> itemList;
-    private OnActividadClickListener onActividadClickListener;
-    private OnEliminarClickListener onEliminarClickListener;
-    private OnEditarClickListener onEditarClickListener;
-    private OnDetallesClickListener onDetallesClickListener;
+    private Context context;
+    private List<Item> actividadList;
+    private OnActividadClickListener listener;
+    private Consumer<ActividadModel> onDeleteClick;
+    private Consumer<ActividadModel> onEditClick;
+    private Consumer<ActividadModel> onDetailsClick;
 
     public interface OnActividadClickListener {
-        void onActividadClick(ActividadModel actividadModel);
+        void onActividadClick(ActividadModel actividad);
     }
 
-    public interface OnEliminarClickListener {
-        void onEliminarClick(ActividadModel actividadModel);
-    }
-
-    public interface OnEditarClickListener {
-        void onEditarClick(ActividadModel actividadModel);
-    }
-
-    public interface OnDetallesClickListener {
-        void onDetallesClick(ActividadModel actividadModel);
-    }
-
-    public ActividadAdapter(Context context, List<Item> itemList,
-                            OnActividadClickListener onActividadClickListener,
-                            OnEliminarClickListener onEliminarClickListener,
-                            OnEditarClickListener onEditarClickListener,
-                            OnDetallesClickListener onDetallesClickListener) {
-        this.itemList = itemList;
-        this.onActividadClickListener = onActividadClickListener;
-        this.onEliminarClickListener = onEliminarClickListener;
-        this.onEditarClickListener = onEditarClickListener;
-        this.onDetallesClickListener = onDetallesClickListener;
-    }
-
-    @Override
-    public int getItemViewType(int position) {
-        return itemList.get(position).getType();
+    public ActividadAdapter(Context context, List<Item> actividadList, OnActividadClickListener listener,
+                            Consumer<ActividadModel> onDeleteClick,
+                            Consumer<ActividadModel> onEditClick,
+                            Consumer<ActividadModel> onDetailsClick) {
+        this.context = context;
+        this.actividadList = actividadList != null ? actividadList : new ArrayList<>();
+        this.listener = listener;
+        this.onDeleteClick = onDeleteClick;
+        this.onEditClick = onEditClick;
+        this.onDetailsClick = onDetailsClick;
     }
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == Item.TYPE_ACTIVIDAD) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_actividad, parent, false);
-            return new ActividadViewHolder(view);
-        } else if (viewType == Item.TYPE_TITULO) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_actividad_titulo, parent, false);
-            return new TituloViewHolder(view);
-        } else {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_actividad_pasadas, parent, false);
-            return new PasadasViewHolder(view);
-        }
+    public ActividadViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_actividad, parent, false);
+        return new ActividadViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        Item item = itemList.get(position);
+    public void onBindViewHolder(@NonNull ActividadViewHolder holder, int position) {
+        Item item = actividadList.get(position);
+        ActividadModel actividad = item.actividad;
 
-        if (holder instanceof ActividadViewHolder) {
-            ((ActividadViewHolder) holder).bind(item.getActividadModel(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
-        } else if (holder instanceof TituloViewHolder) {
-            ((TituloViewHolder) holder).bind(item.getTitulo());
-        } else if (holder instanceof PasadasViewHolder) {
-            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
+        if (actividad == null) return;
+
+        holder.tvTitulo.setText(actividad.getTitle());
+        holder.btnEliminar.setOnClickListener(v -> onDeleteClick.accept(actividad));
+        holder.btnEditar.setOnClickListener(v -> onEditClick.accept(actividad));
+        holder.btnDetalles.setOnClickListener(v -> onDetailsClick.accept(actividad));
+
+        // Navegación a GestionarFragment
+        holder.layoutAsistentes.setOnClickListener(v -> abrirGestionarFragment(actividad));
+        holder.tvAgregarAsistentes.setOnClickListener(v -> abrirGestionarFragment(actividad));
+        holder.btnPlus.setOnClickListener(v -> abrirGestionarFragment(actividad));
+    }
+
+    private void abrirGestionarFragment(ActividadModel actividad) {
+        GestionarFragment gestionarFragment = new GestionarFragment();
+        Bundle args = new Bundle();
+        args.putString("activity_id", actividad.getId());
+        args.putString("activity_title", actividad.getTitle());
+        gestionarFragment.setArguments(args);
+
+        if (context instanceof FragmentActivity) {
+            FragmentActivity activity = (FragmentActivity) context;
+            activity.getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, gestionarFragment)
+                    .addToBackStack(null)
+                    .commit();
         }
     }
 
     @Override
     public int getItemCount() {
-        return itemList.size();
-    }
-
-    public void updateItems(List<Item> newItemList) {
-        itemList.clear();
-        itemList.addAll(newItemList);
-        notifyDataSetChanged();
+        return actividadList.size();
     }
 
     static class ActividadViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTituloActividad;
-        ImageView ivActividadImagen;
-        TextView btnVerDetalles;
-        Switch switchPromocion;
+        TextView tvTitulo;
+        ImageButton btnEliminar, btnEditar, btnDetalles;
+        LinearLayout layoutAsistentes;
+        TextView tvAgregarAsistentes;
+        ImageButton btnPlus;
 
         public ActividadViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTituloActividad = itemView.findViewById(R.id.tvTituloActividad);
-            ivActividadImagen = itemView.findViewById(R.id.ivActividadImagen);
-            btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
-            switchPromocion = itemView.findViewById(R.id.switchPromocion);
-        }
-
-        public void bind(ActividadModel actividadModel,
-                         OnActividadClickListener onActividadClickListener,
-                         OnDetallesClickListener onDetallesClickListener,
-                         OnEditarClickListener onEditarClickListener,
-                         OnEliminarClickListener onEliminarClickListener) {
-            tvTituloActividad.setText(actividadModel.getTitle());
-            switchPromocion.setChecked(actividadModel.isPromoted());
-            switchPromocion.setEnabled(!actividadModel.isPasada());
-
-            itemView.setOnClickListener(v -> {
-                if (onActividadClickListener != null) {
-                    onActividadClickListener.onActividadClick(actividadModel);
-                }
-            });
-
-            btnVerDetalles.setOnClickListener(v -> {
-                if (onDetallesClickListener != null) {
-                    onDetallesClickListener.onDetallesClick(actividadModel);
-                }
-            });
-
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (!actividadModel.isPasada()) {
-                    String id = actividadModel.getId();
-                    if (id == null || id.equals("0")) {
-                        Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
-                    String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
-
-                    PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
-
-                    ApiService apiService = RetrofitClient.getApiService();
-                    apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
-                        @Override
-                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                            if (response.isSuccessful()) {
-                                Toast.makeText(buttonView.getContext(), "Promoción actualizada", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(buttonView.getContext(), "Error al actualizar", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(Call<ResponseBody> call, Throwable t) {
-                            Toast.makeText(buttonView.getContext(), "Error de red", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            });
-        }
-    }
-
-    static class TituloViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTituloSeccion;
-
-        public TituloViewHolder(@NonNull View itemView) {
-            super(itemView);
-            tvTituloSeccion = itemView.findViewById(R.id.tvTituloSeccion);
-        }
-
-        public void bind(String titulo) {
-            tvTituloSeccion.setText(titulo);
-        }
-    }
-
-    static class PasadasViewHolder extends RecyclerView.ViewHolder {
-        RecyclerView recyclerPasadas;
-
-        public PasadasViewHolder(@NonNull View itemView) {
-            super(itemView);
-            recyclerPasadas = itemView.findViewById(R.id.recyclerActividadesPasadas);
-        }
-
-        public void bind(List<ActividadModel> pasadas,
-                         OnActividadClickListener onActividadClickListener,
-                         OnDetallesClickListener onDetallesClickListener,
-                         OnEditarClickListener onEditarClickListener,
-                         OnEliminarClickListener onEliminarClickListener) {
-
-            List<Item> items = pasadas.stream()
-                    .map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null))
-                    .collect(Collectors.toList());
-
-            ActividadAdapter adapter = new ActividadAdapter(
-                    recyclerPasadas.getContext(),
-                    items,
-                    onActividadClickListener, onEliminarClickListener, onEditarClickListener, onDetallesClickListener
-            );
-
-            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));
-            recyclerPasadas.setAdapter(adapter);
+            tvTitulo = itemView.findViewById(R.id.tvTituloActividad);
+            btnEliminar = itemView.findViewById(R.id.btnEliminar);
+            btnEditar = itemView.findViewById(R.id.btnEditar);
+            btnDetalles = itemView.findViewById(R.id.btnVerDetalles);
+            layoutAsistentes = itemView.findViewById(R.id.layoutAsistentes);
+            tvAgregarAsistentes = itemView.findViewById(R.id.tvAgregarAsistentes);
+            btnPlus = itemView.findViewById(R.id.btnPlus);
         }
     }
 }

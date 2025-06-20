@@ -17,7 +17,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.juan.consumo_movil.R;
-import com.juan.consumo_movil.models.Actividad;
 import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.models.AsistenteAdapter;
 import java.util.ArrayList;
@@ -31,7 +30,7 @@ public class GestionarFragment extends Fragment {
     private LinearLayout containerAsistentes;
     private AsistenteAdapter asistenteAdapter;
     private List<Asistente> asistenteList;
-    private int activityId;
+    private String activityId;
     private TextView tvTituloActividad, tvEmptyGestion;
     private int userId;
 
@@ -39,7 +38,6 @@ public class GestionarFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_gestionar, container, false);
 
-        // Obtener userId
         SharedPreferences prefs = requireContext().getSharedPreferences("user_prefs", requireContext().MODE_PRIVATE);
         userId = prefs.getInt("user_id", -1);
         if (userId == -1) {
@@ -47,14 +45,13 @@ public class GestionarFragment extends Fragment {
             return root;
         }
 
-        // Obtener activity_id de los argumentos
         if (getArguments() != null) {
-            activityId = getArguments().getInt("activity_id", -1);
+            activityId = getArguments().getString("activity_id", "");
+            tvTituloActividad.setText(getArguments().getString("activity_title", ""));
         } else {
-            activityId = -1;
+            activityId = "";
         }
 
-        // Inicializar vistas
         etNombreAsistente = root.findViewById(R.id.etNombreAsistente);
         etEmailAsistente = root.findViewById(R.id.etEmailAsistente);
         btnAgregarAsistente = root.findViewById(R.id.btnAgregarAsistente);
@@ -62,41 +59,21 @@ public class GestionarFragment extends Fragment {
         tvTituloActividad = root.findViewById(R.id.tvTituloActividad);
         tvEmptyGestion = root.findViewById(R.id.tvEmptyGestion);
 
-        // Inicializar lista y adaptador
         asistenteList = new ArrayList<>();
         asistenteAdapter = new AsistenteAdapter(asistenteList,
                 this::mostrarDialogoEditar,
                 this::mostrarDialogoEliminar);
 
-        // Configurar RecyclerView dentro del containerAsistentes
         RecyclerView recyclerView = new RecyclerView(requireContext());
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(asistenteAdapter);
         containerAsistentes.addView(recyclerView);
 
-        // Inicializar ViewModel
         viewModel = new ViewModelProvider(this).get(GestionarViewModel.class);
 
-        // Cargar datos según activityId
-        if (activityId != -1) {
-            ManagerDb db = new ManagerDb(getContext());
-            db.open();
-            Actividad actividad = db.obtenerActividades().stream()
-                    .filter(a -> a.getId() == activityId)
-                    .findFirst().orElse(null);
-            if (actividad != null) {
-                tvTituloActividad.setText(actividad.getTitulo());
-                tvEmptyGestion.setVisibility(View.GONE);
-                // Cargar asistentes iniciales
-                viewModel.cargarAsistentes(activityId);
-            } else {
-                tvEmptyGestion.setText("Selecciona una actividad desde la lista para gestionarla.");
-                tvEmptyGestion.setVisibility(View.VISIBLE);
-                tvTituloActividad.setText("");
-                asistenteList.clear();
-                asistenteAdapter.notifyDataSetChanged();
-            }
-            db.close();
+        if (!activityId.isEmpty()) {
+            tvEmptyGestion.setVisibility(View.GONE);
+            viewModel.cargarAsistentes(activityId);
         } else {
             tvEmptyGestion.setText("Selecciona una actividad desde la lista para gestionarla.");
             tvEmptyGestion.setVisibility(View.VISIBLE);
@@ -105,16 +82,11 @@ public class GestionarFragment extends Fragment {
             asistenteAdapter.notifyDataSetChanged();
         }
 
-        // Observar cambios en la lista de asistentes
         viewModel.getAsistentes().observe(getViewLifecycleOwner(), asistentes -> {
             asistenteList.clear();
-            if (activityId != -1) {
-                asistenteList.addAll(asistentes.stream()
-                        .filter(a -> a.getIdActividad() == activityId)
-                        .toList());
-            }
+            asistenteList.addAll(asistentes);
             asistenteAdapter.notifyDataSetChanged();
-            if (asistenteList.isEmpty() && activityId != -1) {
+            if (asistenteList.isEmpty() && !activityId.isEmpty()) {
                 tvEmptyGestion.setText("No hay asistentes registrados para esta actividad.");
                 tvEmptyGestion.setVisibility(View.VISIBLE);
             } else {
@@ -122,10 +94,8 @@ public class GestionarFragment extends Fragment {
             }
         });
 
-        // Configurar botón de agregar
         btnAgregarAsistente.setOnClickListener(v -> agregarAsistente());
 
-        // Configurar botón de exportar (sin implementación por ahora)
         btnExportarLista.setOnClickListener(v -> Toast.makeText(getContext(), "Exportar lista no implementado", Toast.LENGTH_SHORT).show());
 
         return root;
@@ -135,7 +105,7 @@ public class GestionarFragment extends Fragment {
         String nombreCompleto = etNombreAsistente.getText().toString().trim();
         String correo = etEmailAsistente.getText().toString().trim();
 
-        if (activityId == -1) {
+        if (activityId.isEmpty()) {
             Toast.makeText(getContext(), "Debes seleccionar una actividad primero", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -157,7 +127,7 @@ public class GestionarFragment extends Fragment {
 
         Asistente asistente = new Asistente();
         asistente.setIdAsistente(userId);
-        asistente.setIdActividad(activityId);
+        asistente.setIdActividad(Integer.parseInt(activityId));
         asistente.setNombreCompleto(nombreCompleto);
         asistente.setNombre(primerNombre);
         asistente.setCorreo(correo);
@@ -208,12 +178,6 @@ public class GestionarFragment extends Fragment {
             asistente.setActividadNombre(tvTituloActividad.getText().toString());
             viewModel.actualizarAsistente(asistente);
 
-            int position = asistenteList.indexOf(asistente);
-            if (position != -1) {
-                asistenteList.set(position, asistente);
-                asistenteAdapter.notifyItemChanged(position);
-            }
-
             Toast.makeText(getContext(), "Asistente actualizado", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
@@ -234,8 +198,6 @@ public class GestionarFragment extends Fragment {
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
         btnConfirmar.setOnClickListener(v -> {
             viewModel.eliminarAsistente(asistente);
-            asistenteList.remove(asistente);
-            asistenteAdapter.notifyDataSetChanged();
             Toast.makeText(getContext(), "Asistente eliminado", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });

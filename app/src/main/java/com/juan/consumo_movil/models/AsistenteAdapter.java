@@ -34,7 +34,7 @@ public class AsistenteAdapter extends RecyclerView.Adapter<AsistenteAdapter.Asis
     public void onBindViewHolder(@NonNull AsistenteViewHolder holder, int position) {
         Asistente asistente = asistenteList.get(position);
         holder.tvNombreAsistente.setText(asistente.getNombre() != null ? asistente.getNombre() : "");
-        holder.tvEmailAsistente.setText(asistente.getCorreoAbreviado()); // Usar correo abreviado
+        holder.tvEmailAsistente.setText(asistente.getCorreoAbreviado());
         holder.btnEditarAsistente.setOnClickListener(v -> onEditClick.accept(asistente));
         holder.btnEliminarAsistente.setOnClickListener(v -> onDeleteClick.accept(asistente));
     }

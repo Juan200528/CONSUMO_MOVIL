@@ -1,9 +1,9 @@
 package com.juan.consumo_movil.api;
 
-//import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
+import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.models.PromotionRequest;
 
 import java.util.List;
@@ -41,7 +41,7 @@ public interface ApiService {
             @Header("Authorization") String token
     );
 
-    //📋 Obtener lista de mis actividades
+    // 📋 Obtener lista de mis actividades
     @GET("api/tasks")
     Call<List<ActividadModel>> obtenerActividades(@Header("Authorization") String token);
 
@@ -54,9 +54,7 @@ public interface ApiService {
 
     // 🧑‍🤝‍🧑 Obtener lista de actividades de otros usuarios
     @GET("/api/tasks/others")
-    Call<List<ActividadModel>>obtenerActividadesOtrosUsuarios(@Header("Authorization") String token);
-
-
+    Call<List<ActividadModel>> obtenerActividadesOtrosUsuarios(@Header("Authorization") String token);
 
     // ❌ Eliminar una actividad por ID
     @DELETE("api/tasks/{id}")
@@ -64,14 +62,42 @@ public interface ApiService {
             @Path("id") String id,
             @Header("Authorization") String token
     );
+
+    // 📈 Obtener actividades promovidas
     @GET("api/tasks/promoted")
     Call<List<ActividadModel>> getPromotedTasks();
 
+    // 📣 Promover una actividad
     @POST("api/tasks/{id}/promote")
     Call<Void> promoteTask(
             @Header("Authorization") String token,
             @Path("id") String actividadId
     );
+
     @PATCH("api/tasks/{id}/promotion")
-    Call<ResponseBody> promoteTask(@Path("id") String id, @Body PromotionRequest promotionRequest);
+    Call<ResponseBody> promoteTask(
+            @Path("id") String id,
+            @Body PromotionRequest promotionRequest
+    );
+
+    // 🧑 Registrar un asistente a una actividad
+    @POST("api/confirm")
+    Call<Asistente> confirmAttendance(
+            @Header("Authorization") String token,
+            @Body Asistente asistente
+    );
+
+    // ❌ Cancelar asistencia a una actividad
+    @DELETE("api/cancel/{taskId}")
+    Call<Void> cancelAttendance(
+            @Path("taskId") String taskId,
+            @Header("Authorization") String token
+    );
+
+    // 📋 Obtener lista de asistentes por actividad
+    @GET("api/tasks/{taskId}/attendees")
+    Call<List<Asistente>> getAttendees(
+            @Path("taskId") String taskId,
+            @Header("Authorization") String token
+    );
 }

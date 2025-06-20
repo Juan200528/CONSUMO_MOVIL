@@ -73,7 +73,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         itemList = new ArrayList<>();
         actividadAdapter = new ActividadAdapter(
-                requireContext(), // Proporciona el Contexto
+                requireContext(),
                 itemList,
                 this,
                 this::mostrarDialogoEliminar,
