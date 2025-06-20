@@ -11,6 +11,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
 import com.juan.consumo_movil.ui.actividades.FragmentActPanel;
 import com.juan.consumo_movil.ui.comunidades.ComunidadesFragment;
 import com.juan.consumo_movil.ui.perfil.PerfilFragment;
