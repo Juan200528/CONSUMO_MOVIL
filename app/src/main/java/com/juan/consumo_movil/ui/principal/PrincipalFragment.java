@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SnapHelper;
 
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
@@ -69,6 +70,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerActividades.setLayoutManager(layoutManager);
         recyclerActividades.setHasFixedSize(true);
+
         SnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerActividades);
 
@@ -93,7 +95,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     public void cargarActividades() {
         SessionManager sessionManager = new SessionManager(requireContext());
         String token = sessionManager.getToken();
-
         if (token == null || token.isEmpty()) {
             Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
@@ -105,7 +106,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         ApiService api = RetrofitClient.getApiService();
         Call<List<ActividadModel>> call = api.obtenerActividades("Bearer " + token);
-
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
@@ -131,7 +131,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         executorService.execute(() -> {
             List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-
             Date fechaHoy;
             try {
                 fechaHoy = sdf.parse(sdf.format(new Date()));
@@ -175,6 +174,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                         return 0;
                     }
                 });
+
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
                         getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
@@ -192,7 +192,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEliminar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
-
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -262,12 +261,23 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         Button btnEditar = dialog.findViewById(R.id.btnEditar);
         Button btnEliminar = dialog.findViewById(R.id.btnEliminar);
         Button btnVolver = dialog.findViewById(R.id.btnVolver);
+        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle); // Nueva ImageView
 
         tvTituloDetalle.setText(actividad.getTitle());
         tvDescripcionDetalle.setText(actividad.getDescription());
         tvFechaDetalle.setText(actividad.getDate());
         tvLugarDetalle.setText(actividad.getPlace());
         tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
+
+        // Cargar imagen si está disponible
+        if (actividad.getImageUrl() != null && !actividad.getImageUrl().isEmpty()) {
+            Glide.with(this)
+                    .load(actividad.getImageUrl())
+                    .placeholder(R.drawable.default_image)
+                    .into(ivImagenDetalle);
+        } else {
+            ivImagenDetalle.setImageResource(R.drawable.default_image);
+        }
 
         if (switchPromocion != null) {
             switchPromocion.setChecked(actividad.isPromoted());

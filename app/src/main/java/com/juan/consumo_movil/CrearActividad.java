@@ -15,15 +15,18 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import com.google.gson.Gson;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.utils.SessionManager;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -34,8 +37,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.UUID;
+
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -43,9 +46,12 @@ import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
 public class CrearActividad extends AppCompatActivity {
+
     private static final int PICK_IMAGE = 1;
     private static final int PERM_REQ = 100;
+
     private EditText etTitulo, etDesc, etFecha, etLugar, etResp;
     private ImageButton btnSubir, btnDate;
     private ImageView ivImg;
@@ -57,8 +63,8 @@ public class CrearActividad extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_crear_actividad);
-        api = RetrofitClient.getApiService();
-        sessionManager = new SessionManager(this);
+
+        // Inicialización de vistas
         etTitulo = findViewById(R.id.etTitulo);
         etDesc = findViewById(R.id.etDescripcion);
         etFecha = findViewById(R.id.etFecha);
@@ -67,6 +73,10 @@ public class CrearActividad extends AppCompatActivity {
         btnSubir = findViewById(R.id.btnSubir);
         btnDate = findViewById(R.id.btnCalendario);
         ivImg = findViewById(R.id.ivActividadImagen);
+
+        api = RetrofitClient.getApiService();
+        sessionManager = new SessionManager(this);
+
         btnDate.setOnClickListener(v -> showDatePicker());
         btnSubir.setOnClickListener(v -> pickImage());
         findViewById(R.id.btnCrear).setOnClickListener(v -> upload());
@@ -74,13 +84,16 @@ public class CrearActividad extends AppCompatActivity {
 
     private void showToastAndLog(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-        Log.e("CrearActividad", message); // Puedes usar Log.d(), Log.w(), etc.
+        Log.e("CrearActividad", message);
     }
 
     private void showDatePicker() {
         Calendar c = Calendar.getInstance();
-        new DatePickerDialog(this, (DatePicker view, int year, int month, int dayOfMonth) -> {
-            etFecha.setText(String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth));
+        new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                etFecha.setText(String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth));
+            }
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
@@ -116,6 +129,7 @@ public class CrearActividad extends AppCompatActivity {
             }
         }
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
@@ -154,11 +168,11 @@ public class CrearActividad extends AppCompatActivity {
         String responsablesStr = etResp.getText().toString().trim();
 
         if (TextUtils.isEmpty(titulo) || TextUtils.isEmpty(fecha) || TextUtils.isEmpty(lugar)) {
-            showToastAndLog("Título, fecha, y lugar son obligatorios");
+            showToastAndLog("Título, fecha y lugar son obligatorios");
             return;
         }
 
-        // Validación de que la fecha no sea anterior a hoy
+        // Validación de fecha
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         try {
             Date inputDate = sdf.parse(fecha);
@@ -167,7 +181,6 @@ public class CrearActividad extends AppCompatActivity {
             today.set(Calendar.MINUTE, 0);
             today.set(Calendar.SECOND, 0);
             today.set(Calendar.MILLISECOND, 0);
-
             if (inputDate.before(today.getTime())) {
                 showToastAndLog("No puedes seleccionar una fecha anterior a hoy");
                 return;
@@ -183,23 +196,43 @@ public class CrearActividad extends AppCompatActivity {
             return;
         }
 
-        ActividadModel actividad = new ActividadModel();
-        actividad.setTitle(titulo);
-        actividad.setDescription(descripcion);
-        actividad.setDate(formatDateForBackend(fecha));
-        actividad.setPlace(lugar);
-
+        // Convertir campos normales a RequestBody
+        RequestBody titleBody = createRequestBody(titulo);
+        RequestBody descBody = createRequestBody(descripcion);
+        RequestBody dateBody = createRequestBody(formatDateForBackend(fecha));
+        RequestBody placeBody = createRequestBody(lugar);
+        RequestBody responsableBody = null;
         if (!responsablesStr.isEmpty()) {
-            List<String> responsablesList = Arrays.asList(responsablesStr.split("\\s*,\\s*"));
-            actividad.setResponsible(responsablesList);
+            responsableBody = createRequestBody(responsablesStr);
         }
 
-        Call<ActividadModel> call = api.crearActividad("Bearer " + token, actividad);
+        // Preparar imagen
+        MultipartBody.Part imagePart = null;
+        if (imgFile != null && imgFile.exists()) {
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), imgFile);
+            imagePart = MultipartBody.Part.createFormData("image", imgFile.getName(), requestFile);
+        }
+
+        // Llamada API
+        Call<ActividadModel> call = api.crearActividadConImagen(
+                "Bearer " + token,
+                titleBody,
+                descBody,
+                dateBody,
+                placeBody,
+                responsableBody,
+                imagePart
+        );
+
         call.enqueue(new Callback<ActividadModel>() {
             @Override
             public void onResponse(Call<ActividadModel> call, Response<ActividadModel> response) {
                 cleanupTempFile();
                 if (response.isSuccessful()) {
+                    ActividadModel actividad = response.body();
+                    if (actividad != null && actividad.getImageUrl() != null) {
+                        Log.d("CrearActividad", "URL de imagen: " + actividad.getImageUrl());
+                    }
                     showToastAndLog("Actividad creada exitosamente");
                     finish();
                 } else {
@@ -215,11 +248,15 @@ public class CrearActividad extends AppCompatActivity {
         });
     }
 
+    private RequestBody createRequestBody(String value) {
+        return RequestBody.create(MediaType.parse("text/plain"), value);
+    }
+
     private String formatDateForBackend(String dateStr) {
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-            outputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            outputFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
             Date date = inputFormat.parse(dateStr);
             return outputFormat.format(date);
         } catch (ParseException e) {
