@@ -3,6 +3,7 @@ package com.juan.consumo_movil.api;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
+import com.juan.consumo_movil.models.CrearActividadRequest;
 import com.juan.consumo_movil.models.PromotionRequest;
 
 import java.util.List;
@@ -48,9 +49,9 @@ public interface ApiService {
 
     // ➕ Crear nueva actividad
     @POST("api/tasks")
-    Call<ActividadModel> crearActividad(
-            @Header("Authorization") String authToken,
-            @Body ActividadModel actividad
+    Call<com.juan.consumo_movil.model.ActividadModel> crearActividad(
+            @Header("Authorization") String token,
+            @Body CrearActividadRequest request
     );
 
     // 🧑‍🤝‍🧑 Obtener lista de actividades de otros usuarios

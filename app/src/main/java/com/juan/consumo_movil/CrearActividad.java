@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -26,7 +27,7 @@ import androidx.core.content.ContextCompat;
 
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
-import com.juan.consumo_movil.model.ActividadModel;
+import com.juan.consumo_movil.models.CrearActividadRequest;
 import com.juan.consumo_movil.utils.SessionManager;
 
 import java.io.File;
@@ -34,7 +35,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -162,7 +163,7 @@ public class CrearActividad extends AppCompatActivity {
         String descripcion = etDesc.getText().toString().trim();
         String fecha = etFecha.getText().toString().trim();
         String lugar = etLugar.getText().toString().trim();
-        String responsablesStr = etResp.getText().toString().trim();
+        String responsable = etResp.getText().toString().trim();
 
         if (TextUtils.isEmpty(titulo) || TextUtils.isEmpty(fecha) || TextUtils.isEmpty(lugar)) {
             showToastAndLog("Título, fecha y lugar son obligatorios");
@@ -175,20 +176,25 @@ public class CrearActividad extends AppCompatActivity {
             return;
         }
 
-        ActividadModel actividad = new ActividadModel();
-        actividad.setTitle(titulo);
-        actividad.setDescription(descripcion);
-        actividad.setDate(formatDateForBackend(fecha));
-        actividad.setPlace(lugar);
-        if (!responsablesStr.isEmpty()) {
-            List<String> responsablesList = Arrays.asList(responsablesStr.split("\\s*,\\s*"));
-            actividad.setResponsible(responsablesList);
+        String fechaISO = formatDateForBackend(fecha);
+        if (fechaISO == null) {
+            showToastAndLog("Fecha inválida. Usa el formato correcto (yyyy-MM-dd)");
+            return;
         }
 
-        Call<ActividadModel> call = api.crearActividad("Bearer " + token, actividad);
-        call.enqueue(new Callback<ActividadModel>() {
+        CrearActividadRequest request = new CrearActividadRequest(
+                titulo,
+                descripcion,
+                lugar,
+                fechaISO,
+                responsable,
+                false
+        );
+
+        Call<com.juan.consumo_movil.model.ActividadModel> call = api.crearActividad("Bearer " + token, request);
+        call.enqueue(new Callback<com.juan.consumo_movil.model.ActividadModel>() {
             @Override
-            public void onResponse(Call<ActividadModel> call, Response<ActividadModel> response) {
+            public void onResponse(Call<com.juan.consumo_movil.model.ActividadModel> call, Response<com.juan.consumo_movil.model.ActividadModel> response) {
                 cleanupTempFile();
                 if (response.isSuccessful()) {
                     showToastAndLog("✅ Actividad creada exitosamente");
@@ -199,7 +205,7 @@ public class CrearActividad extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<ActividadModel> call, Throwable t) {
+            public void onFailure(Call<com.juan.consumo_movil.model.ActividadModel> call, Throwable t) {
                 cleanupTempFile();
                 showToastAndLog("⚠️ Error de conexión: " + t.getMessage());
             }
@@ -214,7 +220,7 @@ public class CrearActividad extends AppCompatActivity {
             Date date = inputFormat.parse(dateStr);
             return outputFormat.format(date);
         } catch (ParseException e) {
-            return dateStr + "T00:00:00.000Z";
+            return null;
         }
     }
 
