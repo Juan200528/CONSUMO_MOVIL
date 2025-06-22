@@ -270,9 +270,9 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
 
         // Cargar imagen si está disponible
-        if (actividad.getImageUrl() != null && !actividad.getImageUrl().isEmpty()) {
+        if (actividad.getImage() != null && !actividad.getImage().isEmpty()) {
             Glide.with(this)
-                    .load(actividad.getImageUrl())
+                    .load(actividad.getImage())
                     .placeholder(R.drawable.default_image)
                     .into(ivImagenDetalle);
         } else {

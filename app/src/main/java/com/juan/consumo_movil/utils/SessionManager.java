@@ -18,8 +18,30 @@ public class SessionManager {
 
     private final SharedPreferences sharedPreferences;
 
+    // ✅ Instancia Singleton
+    private static SessionManager instance;
+
     public SessionManager(Context context) {
         sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+    }
+
+    /**
+     * Inicializa la instancia global del SessionManager
+     */
+    public static void init(Context context) {
+        if (instance == null) {
+            instance = new SessionManager(context);
+        }
+    }
+
+    /**
+     * Devuelve la instancia global del SessionManager
+     */
+    public static SessionManager getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("SessionManager no ha sido inicializado. Llama a SessionManager.init(context) antes.");
+        }
+        return instance;
     }
 
     /**

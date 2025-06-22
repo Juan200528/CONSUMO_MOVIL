@@ -230,8 +230,8 @@ public class CrearActividad extends AppCompatActivity {
                 cleanupTempFile();
                 if (response.isSuccessful()) {
                     ActividadModel actividad = response.body();
-                    if (actividad != null && actividad.getImageUrl() != null) {
-                        Log.d("CrearActividad", "URL de imagen: " + actividad.getImageUrl());
+                    if (actividad != null && actividad.getImage() != null) {
+                        Log.d("CrearActividad", "URL de imagen: " + actividad.getImage());
                     }
                     showToastAndLog("Actividad creada exitosamente");
                     finish();

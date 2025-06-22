@@ -79,11 +79,7 @@ public class ListaViewModel extends ViewModel {
         for (ActividadModel model : modelos) {
             Actividad actividad = new Actividad();
 
-            try {
-                actividad.setId(Integer.parseInt(model.getId()));
-            } catch (NumberFormatException ignored) {
-                actividad.setId(0); // valor por defecto si falla el parse
-            }
+            actividad.setId(model.getId());
 
             actividad.setTitulo(model.getTitle());
             actividad.setDescripcion(model.getDescription());

@@ -2,53 +2,53 @@ package com.juan.consumo_movil.ui.lista_actividades;
 
 import android.app.Dialog;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.juan.consumo_movil.R;
-import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.Actividad;
 import com.juan.consumo_movil.models.ActividadAdapterLista;
 import com.juan.consumo_movil.utils.SessionManager;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class ListaFragment extends Fragment implements ActividadAdapterLista.OnActividadClickListener,
-        ActividadAdapterLista.OnDetallesClickListener, ActividadAdapterLista.OnAsistirClickListener {
+public class ListaFragment extends Fragment implements
+        ActividadAdapterLista.OnActividadClickListener,
+        ActividadAdapterLista.OnDetallesClickListener,
+        ActividadAdapterLista.OnAsistirClickListener {
 
     private RecyclerView recyclerView;
     private ActividadAdapterLista adapter;
-    private List<Actividad> actividadList;
-    private List<Actividad> listaOriginal;
+    private List<Actividad> actividadList = new ArrayList<>();
+    private List<Actividad> listaOriginal = new ArrayList<>();
     private TextView tvEmpty;
     private ImageButton btnBuscar;
     private SessionManager sessionManager;
-
-    public static ListaFragment newInstance() {
-        return new ListaFragment();
-    }
+    private String miUsuarioId;
 
     @Nullable
     @Override
@@ -59,76 +59,68 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
         btnBuscar = view.findViewById(R.id.btnBuscarLupa);
         tvEmpty = view.findViewById(R.id.tvEmptyLista);
         sessionManager = new SessionManager(requireContext());
+        miUsuarioId = sessionManager.getUserId();
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        actividadList = new ArrayList<>();
-        listaOriginal = new ArrayList<>();
-        adapter = new ActividadAdapterLista(actividadList, this, this, this);
+        adapter = new ActividadAdapterLista(actividadList, this, this, this, sessionManager);
         recyclerView.setAdapter(adapter);
 
-        cargarActividadesDesdeAPI();
+        cargarActividadesIniciales();
+
         btnBuscar.setOnClickListener(v -> mostrarDialogoBusqueda());
 
         return view;
     }
 
-    private void cargarActividadesDesdeAPI() {
-        String token = sessionManager.getToken();
+    private void cargarActividadesIniciales() {
+        String token = sessionManager.fetchAuthToken();
         if (token == null || token.isEmpty()) {
             Toast.makeText(requireContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        ApiService api = RetrofitClient.getApiService();
-        Call<List<ActividadModel>> call = api.obtenerActividadesOtrosUsuarios("Bearer " + token);
-        call.enqueue(new Callback<List<ActividadModel>>() {
-            @Override
-            public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<ActividadModel> modelos = response.body();
-                    List<Actividad> listaConvertida = new ArrayList<>();
-                    for (ActividadModel model : modelos) {
-                        listaConvertida.add(convertirAPIaActividad(model));
+        RetrofitClient.getApiService().obtenerActividadesOtrosUsuarios(token)
+                .enqueue(new Callback<List<ActividadModel>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<List<ActividadModel>> call, @NonNull Response<List<ActividadModel>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            listaOriginal.clear();
+                            for (ActividadModel model : response.body()) {
+                                Actividad act = convertirAPIaActividad(model);
+                                listaOriginal.add(act);
+                            }
+                            actividadList = new ArrayList<>(listaOriginal);
+                            adapter.updateItems(actividadList);
+                            actualizarVisibilidad();
+                        } else {
+                            Toast.makeText(requireContext(), "Error cargando actividades ajenas", Toast.LENGTH_SHORT).show();
+                        }
                     }
-                    listaOriginal.clear();
-                    listaOriginal.addAll(listaConvertida);
-                    actividadList.clear();
-                    actividadList.addAll(listaOriginal);
-                    adapter.notifyDataSetChanged();
-                    actualizarVisibilidad();
-                } else {
-                    Log.e("ListaFragment", "Error al obtener actividades: " + response.code());
-                    Toast.makeText(requireContext(), "Error al cargar actividades", Toast.LENGTH_SHORT).show();
-                }
-            }
 
-            @Override
-            public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
-                Log.e("ListaFragment", "Fallo al llamar a la API", t);
-                Toast.makeText(requireContext(), "No se pudo conectar con el servidor", Toast.LENGTH_SHORT).show();
-            }
-        });
+                    @Override
+                    public void onFailure(@NonNull Call<List<ActividadModel>> call, @NonNull Throwable t) {
+                        Toast.makeText(requireContext(), "Error de red", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private Actividad convertirAPIaActividad(ActividadModel model) {
         Actividad actividad = new Actividad();
-        try {
-            actividad.setId(Integer.parseInt(model.getId()));
-        } catch (NumberFormatException ignored) {
-            actividad.setId(0);
-        }
+        actividad.setId(model.getId());
         actividad.setTitulo(model.getTitle());
         actividad.setDescripcion(model.getDescription());
         actividad.setLugar(model.getPlace());
         actividad.setFecha(model.getDate());
+        actividad.setPromocionada(model.isPromoted());
+        actividad.setPasada(model.isPasada());
+        actividad.setAsistido(false);
+        actividad.setImagenRuta(model.getImage());
+        actividad.setIdCreador(model.getUser() != null ? model.getUser().getId() : "desconocido");
         if (model.getResponsible() != null && !model.getResponsible().isEmpty()) {
             actividad.setResponsables(String.join(", ", model.getResponsible()));
         } else {
             actividad.setResponsables("Sin responsables");
         }
-        actividad.setPromocionada(model.isPromoted());
-        actividad.setPasada(false);
-        actividad.setAsistido(false);
         return actividad;
     }
 
@@ -144,11 +136,9 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
 
         btnBuscar.setOnClickListener(v -> {
             String filtroTexto = etBuscar.getText().toString().trim();
-            int idFechaSeleccionada = rgFecha.getCheckedRadioButtonId();
-            boolean filtrarProximas = idFechaSeleccionada == R.id.rbFechaProximas;
-            boolean filtrarPasadas = idFechaSeleccionada == R.id.rbFechaPasadas;
-            int idEstadoSeleccionado = rgEstado.getCheckedRadioButtonId();
-            boolean filtrarPromocionadas = idEstadoSeleccionado == R.id.rbEstadoPromocionadas;
+            boolean filtrarProximas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaProximas;
+            boolean filtrarPasadas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaPasadas;
+            boolean filtrarPromocionadas = rgEstado.getCheckedRadioButtonId() == R.id.rbEstadoPromocionadas;
 
             aplicarFiltros(filtroTexto, filtrarProximas, filtrarPasadas, filtrarPromocionadas);
             dialog.dismiss();
@@ -158,40 +148,64 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
     }
 
     private void aplicarFiltros(String texto, boolean proximas, boolean pasadas, boolean promocionadas) {
-        actividadList.clear();
-        for (Actividad act : listaOriginal) {
-            boolean coincideTexto = texto.isEmpty() ||
-                    act.getTitulo().toLowerCase(Locale.getDefault()).contains(texto.toLowerCase(Locale.getDefault())) ||
-                    (act.getDescripcion() != null && act.getDescripcion().toLowerCase(Locale.getDefault()).contains(texto.toLowerCase(Locale.getDefault()))) ||
-                    (act.getResponsables() != null && act.getResponsables().toLowerCase(Locale.getDefault()).contains(texto.toLowerCase(Locale.getDefault())));
-
-            boolean coincideFecha = true;
-            if (proximas) coincideFecha = esFechaFutura(act.getFecha());
-            if (pasadas) coincideFecha = !esFechaFutura(act.getFecha());
-
-            boolean coincideEstado = true;
-            if (promocionadas) coincideEstado = act.isPromocionada();
-
-            if (coincideTexto && coincideFecha && coincideEstado) {
-                actividadList.add(act);
-            }
+        String token = sessionManager.fetchAuthToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(requireContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        adapter.notifyDataSetChanged();
-        actualizarVisibilidad();
-        Toast.makeText(requireContext(), "Mostrando " + actividadList.size() + " resultados", Toast.LENGTH_SHORT).show();
+        RetrofitClient.getApiService().searchTasks(token, texto)
+                .enqueue(new Callback<List<ActividadModel>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<List<ActividadModel>> call, @NonNull Response<List<ActividadModel>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            List<Actividad> filtradas = new ArrayList<>();
+                            Date hoy = new Date();
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+                            for (ActividadModel model : response.body()) {
+                                Actividad act = convertirAPIaActividad(model);
+
+                                // Filtro por texto (si hay texto ingresado)
+                                if (!texto.isEmpty() && !act.getTitulo().toLowerCase().contains(texto.toLowerCase())) {
+                                    continue;
+                                }
+
+                                // Filtro por fecha
+                                boolean coincideFecha = true;
+                                try {
+                                    Date fechaAct = sdf.parse(act.getFecha());
+                                    if (proximas && (fechaAct == null || !fechaAct.after(hoy))) coincideFecha = false;
+                                    if (pasadas && (fechaAct == null || !fechaAct.before(hoy))) coincideFecha = false;
+                                } catch (ParseException e) {
+                                    coincideFecha = false;
+                                }
+
+                                // Filtro por promoción
+                                boolean coincidePromocion = !promocionadas || act.isPromocionada();
+
+                                // Agrega si cumple todos
+                                if (coincideFecha && coincidePromocion) {
+                                    filtradas.add(act);
+                                }
+                            }
+
+                            actividadList = filtradas;
+                            adapter.updateItems(filtradas);
+                            actualizarVisibilidad();
+                        } else {
+                            Toast.makeText(requireContext(), "No se encontraron actividades", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<List<ActividadModel>> call, @NonNull Throwable t) {
+                        Toast.makeText(requireContext(), "Error búsqueda", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
-    private boolean esFechaFutura(String fechaStr) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        Date today = new Date();
-        try {
-            Date fecha = sdf.parse(fechaStr);
-            return fecha != null && fecha.after(today);
-        } catch (ParseException e) {
-            return false;
-        }
-    }
+
 
     private void actualizarVisibilidad() {
         if (actividadList.isEmpty()) {
@@ -205,16 +219,16 @@ public class ListaFragment extends Fragment implements ActividadAdapterLista.OnA
 
     @Override
     public void onActividadClick(Actividad actividad) {
-        Toast.makeText(requireContext(), "Clic en: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+        // No implementado
     }
 
     @Override
     public void onDetallesClick(Actividad actividad) {
-        Toast.makeText(requireContext(), "Ver detalles: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+        // Ahora manejado dentro de ActividadAdapterLista
     }
 
     @Override
     public void onAsistirClick(Actividad actividad, int position) {
-        Toast.makeText(requireContext(), "Asistiendo a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), "Asistir a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
     }
 }

@@ -21,6 +21,7 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface ApiService {
 
@@ -64,6 +65,13 @@ public interface ApiService {
     // 🧑‍🤝‍🧑 Obtener lista de actividades de otros usuarios
     @GET("/api/tasks/others")
     Call<List<ActividadModel>> obtenerActividadesOtrosUsuarios(@Header("Authorization") String token);
+
+    @GET("api/tasks/search")
+    Call<List<ActividadModel>> searchTasks(
+            @Header("Authorization") String token,
+            @Query("texto") String textoBusqueda
+    );
+
 
     // ✏️ Actualizar actividad
     @PUT("api/tasks/{id}")

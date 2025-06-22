@@ -32,9 +32,25 @@ public class ActividadModel {
     @SerializedName("pasada")
     private boolean pasada;
 
-    // 🔽 Nuevo campo para la imagen (no se modifica nada existente)
     @SerializedName("image")
-    private String imageUrl; // Campo nuevo: URL de la imagen en el backend
+    private String imageUrl;
+
+    @SerializedName("user")
+    private User user;
+
+    // --- Clase interna User ---
+    public static class User {
+        @SerializedName("_id")
+        private String id;
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+    }
 
     // --- Getters y Setters ---
 
@@ -110,12 +126,19 @@ public class ActividadModel {
         this.pasada = pasada;
     }
 
-    // 🔼 Getter y Setter para la imagen (nuevos métodos)
-    public String getImageUrl() {
+    public String getImage() {
         return imageUrl;
     }
 
-    public void setImageUrl(String imageUrl) {
+    public void setImage(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }
