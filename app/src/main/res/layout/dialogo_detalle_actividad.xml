@@ -11,14 +11,15 @@
         android:layout_height="wrap_content"
         app:cardCornerRadius="16dp"
         app:cardElevation="4dp"
-        app:strokeColor="#DDDDDD"
-        app:strokeWidth="2dp">
+        app:strokeColor="#efb810"
+    app:strokeWidth="2dp"
+    app:cardBackgroundColor="@android:color/white"> <!-- Fondo blanco -->
 
-        <!-- Contenedor del título -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+    <!-- Contenedor del título -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <!-- Título de la sección -->
         <TextView
@@ -38,193 +39,155 @@
             android:orientation="vertical"
             android:padding="6dp">
 
-                    <!-- Imagen de la actividad -->
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:layout_marginBottom="16dp"
-                        android:gravity="center">
+            <!-- Imagen de la actividad -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginBottom="16dp"
+                android:gravity="center">
 
-                        <ImageView
-                            android:id="@+id/ivImagenDetalle"
-                            android:layout_width="match_parent"
-                            android:layout_height="200dp"
-                            android:adjustViewBounds="true"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/default_image" />
-                    </FrameLayout>
+                <ImageView
+                    android:id="@+id/ivImagenDetalle"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/default_image" />
+            </FrameLayout>
 
+            <!-- Seccion Titulo -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="1dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="2dp">
 
-                <!-- Seccion Titulo -->
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text=" Titulo: "
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTituloDetalle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingVertical="2dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text=" Titulo: "
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvTituloDetalle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text=""
-                        android:textColor="#424242"
-                        android:textSize="16sp" />
-                </LinearLayout>
+                    android:text=""
+                    android:textColor="#424242"
+                    android:textSize="16sp" />
             </LinearLayout>
 
+            <!-- Seccion Descripcion -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="1dp">
+                android:paddingVertical="2dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <!-- Seccion Descripcion -->
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" Descripcion: "
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp" />
+
+                <TextView
+                    android:id="@+id/tvDescripcionDetalle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingVertical="2dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=" Descripcion: "
-                        android:textStyle="bold"
-                        android:layout_marginStart="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvDescripcionDetalle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#424242"
-                        android:textSize="16sp"
-                        android:text=""
-                        />
-                </LinearLayout>
+                    android:textColor="#424242"
+                    android:textSize="16sp"
+                    android:text="" />
             </LinearLayout>
 
+            <!-- Seccion Fecha -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="1dp">
+                android:paddingVertical="2dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <!-- Seccion Fecha -->
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" Fecha: "
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp" />
+
+                <TextView
+                    android:id="@+id/tvFechaDetalle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingVertical="2dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=" Fecha: "
-                        android:textStyle="bold"
-                        android:layout_marginStart="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvFechaDetalle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#424242"
-                        android:textSize="16sp"
-                        android:text=""
-                        />
-                </LinearLayout>
+                    android:textColor="#424242"
+                    android:textSize="16sp"
+                    android:text="" />
             </LinearLayout>
 
+            <!-- Seccion Lugar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="1dp">
+                android:paddingVertical="2dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <!-- Seccion Lugar -->
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" Lugar: "
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp" />
+
+                <TextView
+                    android:id="@+id/tvLugarDetalle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingVertical="2dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=" Lugar: "
-                        android:textStyle="bold"
-                        android:layout_marginStart="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvLugarDetalle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#424242"
-                        android:textSize="16sp"
-                        android:text=""
-                        />
-                </LinearLayout>
+                    android:textColor="#424242"
+                    android:textSize="16sp"
+                    android:text="" />
             </LinearLayout>
 
+            <!-- Seccion Responsables -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="1dp">
+                android:paddingVertical="2dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <!-- Seccion Responsables -->
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" Responsables: "
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp" />
+
+                <TextView
+                    android:id="@+id/tvResponsablesDetalle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingVertical="2dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=" Responsables: "
-                        android:textStyle="bold"
-                        android:layout_marginStart="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvResponsablesDetalle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#424242"
-                        android:textSize="16sp"
-                        android:text=""
-                        />
-                </LinearLayout>
+                    android:textColor="#424242"
+                    android:textSize="16sp"
+                    android:text="" />
             </LinearLayout>
 
-                    <!-- Botón Volver -->
-                    <Button
-                        android:id="@+id/btnVolver"
-                        android:layout_width="120dp"
-                        android:layout_height="40dp"
-                        android:layout_gravity="center"
-                        android:backgroundTint="#03683E"
-                        android:text="Volver"
-                        android:textAllCaps="false"
-                        android:textColor="@android:color/white"
-                        android:textSize="14sp" />
+            <!-- Botón Volver -->
+            <Button
+                android:id="@+id/btnVolver"
+                android:layout_width="120dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:backgroundTint="#03683E"
+                android:text="Volver"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="14sp" />
+
         </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-</ScrollView>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
+    </ScrollView>
