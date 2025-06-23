@@ -1,12 +1,14 @@
 package com.juan.consumo_movil.ui.principal;
 
 import android.app.Dialog;
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -31,6 +33,7 @@ import com.juan.consumo_movil.utils.SessionManager;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -82,7 +85,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         );
 
         recyclerActividades.setAdapter(actividadAdapter);
-
         cargarActividades();
 
         return root;
@@ -91,7 +93,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     @Override
     public void onResume() {
         super.onResume();
-        cargarActividades(); // Recarga al volver al fragmento
+        cargarActividades(); // Recargar actividades al regresar al fragmento
     }
 
     public void cargarActividades() {
@@ -133,7 +135,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         executorService.execute(() -> {
             List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-
             Date fechaHoy;
             try {
                 fechaHoy = sdf.parse(sdf.format(new Date()));
@@ -180,7 +181,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
                         getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
-
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
             }
 
@@ -199,7 +199,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEliminar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
-
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -218,7 +217,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
             ApiService api = RetrofitClient.getApiService();
             Call<Void> call = api.eliminarActividad("Bearer " + token, actividad.getId());
-
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -254,12 +252,18 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         EditText etEditarLugar = dialog.findViewById(R.id.etEditarLugar);
         EditText etEditarResponsables = dialog.findViewById(R.id.etEditarResponsables);
         Button btnGuardar = dialog.findViewById(R.id.btnGuardarCambios);
+        ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar); // Botón X
 
         etEditarTitulo.setText(actividad.getTitle());
         etEditarDescripcion.setText(actividad.getDescription());
         etEditarFecha.setText(actividad.getDate());
         etEditarLugar.setText(actividad.getPlace());
         etEditarResponsables.setText(String.join(", ", actividad.getResponsible()));
+
+        // Evitar teclado y abrir calendario
+        etEditarFecha.setKeyListener(null);
+        etEditarFecha.setFocusable(false);
+        etEditarFecha.setOnClickListener(v -> mostrarCalendario(etEditarFecha));
 
         btnGuardar.setOnClickListener(v -> {
             actividad.setTitle(etEditarTitulo.getText().toString());
@@ -272,7 +276,40 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             dialog.dismiss();
         });
 
+        ivCerrar.setOnClickListener(v -> dialog.dismiss());
+
         dialog.show();
+    }
+
+    private void mostrarCalendario(EditText editTextFecha) {
+        String fechaActual = editTextFecha.getText().toString();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        Calendar cal = Calendar.getInstance();
+
+        if (!fechaActual.isEmpty()) {
+            try {
+                cal.setTime(sdf.parse(fechaActual));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
+        int year = cal.get(Calendar.YEAR);
+        int month = cal.get(Calendar.MONTH);
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                requireContext(),
+                (view, year1, month1, day1) -> {
+                    Calendar selectedDate = Calendar.getInstance();
+                    selectedDate.set(year1, month1, day1);
+                    String formattedDate = sdf.format(selectedDate.getTime());
+                    editTextFecha.setText(formattedDate);
+                },
+                year, month, day
+        );
+
+        datePickerDialog.show();
     }
 
     private void mostrarDialogoDetalles(ActividadModel actividad, View itemView) {
@@ -290,40 +327,55 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         Button btnVolver = dialog.findViewById(R.id.btnVolver);
         ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle);
 
-        tvTituloDetalle.setText(actividad.getTitle());
-        tvDescripcionDetalle.setText(actividad.getDescription());
-        tvFechaDetalle.setText(actividad.getDate());
-        tvLugarDetalle.setText(actividad.getPlace());
-        tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
+        if (tvTituloDetalle != null)
+            tvTituloDetalle.setText(actividad.getTitle());
+        if (tvDescripcionDetalle != null)
+            tvDescripcionDetalle.setText(actividad.getDescription());
+        if (tvFechaDetalle != null)
+            tvFechaDetalle.setText(actividad.getDate());
+        if (tvLugarDetalle != null)
+            tvLugarDetalle.setText(actividad.getPlace());
+        if (tvResponsablesDetalle != null)
+            tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
 
-        if (actividad.getImage() != null && !actividad.getImage().isEmpty()) {
-            Glide.with(this)
-                    .load(actividad.getImage())
-                    .placeholder(R.drawable.default_image)
-                    .error(R.drawable.default_image)
-                    .into(ivImagenDetalle);
-        } else {
-            ivImagenDetalle.setImageResource(R.drawable.default_image);
+        if (ivImagenDetalle != null) {
+            if (actividad.getImage() != null && !actividad.getImage().isEmpty()) {
+                Glide.with(this)
+                        .load(actividad.getImage())
+                        .placeholder(R.drawable.default_image)
+                        .error(R.drawable.default_image)
+                        .into(ivImagenDetalle);
+            } else {
+                ivImagenDetalle.setImageResource(R.drawable.default_image);
+            }
         }
 
-        switchPromocion.setChecked(actividad.isPromoted());
-        switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) ->
-                Toast.makeText(itemView.getContext(),
-                        isChecked ? "Promocionando: " + actividad.getTitle()
-                                : "Desactivado: " + actividad.getTitle(),
-                        Toast.LENGTH_SHORT).show());
+        if (switchPromocion != null) {
+            switchPromocion.setChecked(actividad.isPromoted());
+            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) ->
+                    Toast.makeText(itemView.getContext(),
+                            isChecked ? "Promocionando: " + actividad.getTitle()
+                                    : "Desactivado: " + actividad.getTitle(),
+                            Toast.LENGTH_SHORT).show());
+        }
 
-        btnEditar.setOnClickListener(v -> {
-            dialog.dismiss();
-            mostrarDialogoEditar(actividad);
-        });
+        if (btnEditar != null) {
+            btnEditar.setOnClickListener(v -> {
+                dialog.dismiss();
+                mostrarDialogoEditar(actividad);
+            });
+        }
 
-        btnEliminar.setOnClickListener(v -> {
-            dialog.dismiss();
-            mostrarDialogoEliminar(actividad);
-        });
+        if (btnEliminar != null) {
+            btnEliminar.setOnClickListener(v -> {
+                dialog.dismiss();
+                mostrarDialogoEliminar(actividad);
+            });
+        }
 
-        btnVolver.setOnClickListener(v -> dialog.dismiss());
+        if (btnVolver != null) {
+            btnVolver.setOnClickListener(v -> dialog.dismiss());
+        }
 
         dialog.show();
     }
