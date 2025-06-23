@@ -6,11 +6,14 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.model.ActividadModel;
+
 import java.util.ArrayList;
 import java.util.List;
 

@@ -10,6 +10,8 @@ import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -49,6 +51,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class PrincipalFragment extends Fragment implements ActividadAdapter.OnActividadClickListener {
+
     private static final String TAG = "PrincipalFragment";
     private RecyclerView recyclerActividades;
     private TextView tvEmptyActividades;
@@ -102,6 +105,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     public void cargarActividades() {
         SessionManager sessionManager = new SessionManager(requireContext());
         String token = sessionManager.getToken();
+
         if (token == null || token.isEmpty()) {
             Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
@@ -138,6 +142,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void procesarActividadesDeAPI(List<ActividadModel> actividadesAPI) {
         executorService.execute(() -> {
             List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
+
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             Date fechaHoy;
             try {
@@ -215,6 +220,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         btnConfirmar.setOnClickListener(v -> {
             SessionManager sessionManager = new SessionManager(requireContext());
             String token = sessionManager.getToken();
+
             if (token == null || token.isEmpty()) {
                 Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
@@ -223,6 +229,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
             ApiService api = RetrofitClient.getApiService();
             Call<Void> call = api.eliminarActividad("Bearer " + token, actividad.getId());
+
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -278,13 +285,13 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             actividad.setDate(etEditarFecha.getText().toString());
             actividad.setPlace(etEditarLugar.getText().toString());
             actividad.setResponsible(List.of(etEditarResponsables.getText().toString().split(", ")));
-
             actividadAdapter.notifyDataSetChanged();
             Toast.makeText(getContext(), "Cambios guardados", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
 
         ivCerrar.setOnClickListener(v -> dialog.dismiss());
+
         dialog.show();
     }
 
@@ -334,7 +341,16 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
     private void mostrarDialogoDetalles(ActividadModel actividad, View itemView) {
         Dialog dialog = new Dialog(itemView.getContext());
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE); // Sin título
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); // Fondo transparente
+
+        // Ajustar tamaño del diálogo (80% del ancho de pantalla)
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(dialog.getWindow().getAttributes());
+        lp.width = (int) (itemView.getContext().getResources().getDisplayMetrics().widthPixels * 0.8f);
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        dialog.getWindow().setAttributes(lp);
 
         TextView tvTituloDetalle = dialog.findViewById(R.id.tvTituloDetalle);
         TextView tvDescripcionDetalle = dialog.findViewById(R.id.tvDescripcionDetalle);
@@ -357,6 +373,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             tvLugarDetalle.setText(actividad.getPlace());
         if (tvResponsablesDetalle != null)
             tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
+
         if (ivImagenDetalle != null) {
             if (actividad.getImage() != null && !actividad.getImage().isEmpty()) {
                 Glide.with(this)
@@ -402,6 +419,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void actualizarVisibilidad() {
         recyclerActividades.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
         tvEmptyActividades.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
+
         if (itemList.isEmpty()) {
             tvEmptyActividades.setText("No hay actividades disponibles");
         }

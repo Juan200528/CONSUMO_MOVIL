@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
@@ -103,6 +105,7 @@ public class PromocionadasFragment extends Fragment {
         TextView tvFechaDetalle = dialog.findViewById(R.id.tvFechaDetalle);
         TextView tvLugarDetalle = dialog.findViewById(R.id.tvLugarDetalle);
         TextView tvResponsablesDetalle = dialog.findViewById(R.id.tvResponsablesDetalle);
+        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle);
         Button btnVolver = dialog.findViewById(R.id.btnVolver);
 
         // Asignar valores desde el modelo
@@ -115,6 +118,18 @@ public class PromocionadasFragment extends Fragment {
             tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
         } else {
             tvResponsablesDetalle.setText("Sin responsables");
+        }
+
+        // Cargar imagen con Glide
+        String imageUrl = actividad.getImage(); // Viene del modelo
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            Glide.with(requireContext())
+                    .load(imageUrl)
+                    .placeholder(R.drawable.default_image) // opcional
+                    .into(ivImagenDetalle);
+            ivImagenDetalle.setVisibility(View.VISIBLE);
+        } else {
+            ivImagenDetalle.setVisibility(View.GONE);
         }
 
         // Botón para cerrar el diálogo
