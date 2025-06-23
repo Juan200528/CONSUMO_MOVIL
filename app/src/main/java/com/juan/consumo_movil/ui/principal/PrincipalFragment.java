@@ -6,7 +6,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -62,18 +61,16 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_principal, container, false);
 
-        // Inicialización de vistas
         recyclerActividades = root.findViewById(R.id.recyclerActividades);
         tvEmptyActividades = root.findViewById(R.id.tvEmptyActividades);
 
-        // Configurar RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerActividades.setLayoutManager(layoutManager);
         recyclerActividades.setHasFixedSize(true);
+
         SnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerActividades);
 
-        // Preparar lista y adaptador
         itemList = new ArrayList<>();
         actividadAdapter = new ActividadAdapter(
                 requireContext(),
@@ -83,9 +80,9 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 this::mostrarDialogoEditar,
                 this::mostrarDialogoDetalles
         );
+
         recyclerActividades.setAdapter(actividadAdapter);
 
-        // Cargar actividades
         cargarActividades();
 
         return root;
@@ -94,7 +91,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     @Override
     public void onResume() {
         super.onResume();
-        cargarActividades(); // Recarga las actividades cada vez que se muestra el fragmento
+        cargarActividades(); // Recarga al volver al fragmento
     }
 
     public void cargarActividades() {
@@ -136,6 +133,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         executorService.execute(() -> {
             List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
             Date fechaHoy;
             try {
                 fechaHoy = sdf.parse(sdf.format(new Date()));
@@ -179,8 +177,10 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                         return 0;
                     }
                 });
+
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
                         getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
+
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
             }
 
@@ -189,10 +189,8 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 itemList.addAll(tempItemList);
                 actividadAdapter.notifyDataSetChanged();
                 actualizarVisibilidad();
-
-                // Desplazar automáticamente hacia arriba si hay elementos
                 if (!itemList.isEmpty()) {
-                    recyclerActividades.smoothScrollToPosition(0); // O usar scrollToPosition(0)
+                    recyclerActividades.smoothScrollToPosition(0);
                 }
             });
         });
@@ -201,6 +199,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEliminar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
+
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -209,11 +208,37 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
 
         btnConfirmar.setOnClickListener(v -> {
-            itemList.removeIf(item -> item.getActividadModel() != null && item.getActividadModel().equals(actividad));
-            actividadAdapter.notifyDataSetChanged();
-            Toast.makeText(getContext(), "Actividad eliminada", Toast.LENGTH_SHORT).show();
-            actualizarVisibilidad();
-            dialog.dismiss();
+            SessionManager sessionManager = new SessionManager(requireContext());
+            String token = sessionManager.getToken();
+            if (token == null || token.isEmpty()) {
+                Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+                return;
+            }
+
+            ApiService api = RetrofitClient.getApiService();
+            Call<Void> call = api.eliminarActividad("Bearer " + token, actividad.getId());
+
+            call.enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    if (response.isSuccessful()) {
+                        itemList.removeIf(item -> item.getActividadModel() != null && item.getActividadModel().equals(actividad));
+                        actividadAdapter.notifyDataSetChanged();
+                        Toast.makeText(getContext(), "Actividad eliminada", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getContext(), "Error al eliminar del servidor", Toast.LENGTH_SHORT).show();
+                    }
+                    dialog.dismiss();
+                    actualizarVisibilidad();
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    Toast.makeText(getContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                }
+            });
         });
 
         dialog.show();
@@ -222,6 +247,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEditar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_editar_actividad);
+
         EditText etEditarTitulo = dialog.findViewById(R.id.etEditarTitulo);
         EditText etEditarDescripcion = dialog.findViewById(R.id.etEditarDescripcion);
         EditText etEditarFecha = dialog.findViewById(R.id.etEditarFecha);
@@ -252,12 +278,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoDetalles(ActividadModel actividad, View itemView) {
         Dialog dialog = new Dialog(itemView.getContext());
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-        lp.copyFrom(dialog.getWindow().getAttributes());
-        lp.width = (int) (itemView.getResources().getDisplayMetrics().widthPixels * 0.8f); // 80% ancho
-        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-        dialog.getWindow().setAttributes(lp);
 
         TextView tvTituloDetalle = dialog.findViewById(R.id.tvTituloDetalle);
         TextView tvDescripcionDetalle = dialog.findViewById(R.id.tvDescripcionDetalle);
@@ -286,32 +306,24 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             ivImagenDetalle.setImageResource(R.drawable.default_image);
         }
 
-        if (switchPromocion != null) {
-            switchPromocion.setChecked(actividad.isPromoted());
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) ->
-                    Toast.makeText(itemView.getContext(),
-                            isChecked ? "Promocionando: " + actividad.getTitle()
-                                    : "Desactivado: " + actividad.getTitle(),
-                            Toast.LENGTH_SHORT).show());
-        }
+        switchPromocion.setChecked(actividad.isPromoted());
+        switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) ->
+                Toast.makeText(itemView.getContext(),
+                        isChecked ? "Promocionando: " + actividad.getTitle()
+                                : "Desactivado: " + actividad.getTitle(),
+                        Toast.LENGTH_SHORT).show());
 
-        if (btnEditar != null) {
-            btnEditar.setOnClickListener(v -> {
-                dialog.dismiss();
-                mostrarDialogoEditar(actividad);
-            });
-        }
+        btnEditar.setOnClickListener(v -> {
+            dialog.dismiss();
+            mostrarDialogoEditar(actividad);
+        });
 
-        if (btnEliminar != null) {
-            btnEliminar.setOnClickListener(v -> {
-                dialog.dismiss();
-                mostrarDialogoEliminar(actividad);
-            });
-        }
+        btnEliminar.setOnClickListener(v -> {
+            dialog.dismiss();
+            mostrarDialogoEliminar(actividad);
+        });
 
-        if (btnVolver != null) {
-            btnVolver.setOnClickListener(v -> dialog.dismiss());
-        }
+        btnVolver.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
     }
