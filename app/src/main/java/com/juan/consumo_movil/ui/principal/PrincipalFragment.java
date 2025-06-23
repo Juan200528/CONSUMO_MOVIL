@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -44,12 +45,11 @@ import retrofit2.Response;
 public class PrincipalFragment extends Fragment implements ActividadAdapter.OnActividadClickListener {
 
     private static final String TAG = "PrincipalFragment";
-
     private RecyclerView recyclerActividades;
     private TextView tvEmptyActividades;
     private ActividadAdapter actividadAdapter;
     private List<ActividadAdapter.Item> itemList;
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ExecutorService executorService;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,16 +61,18 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_principal, container, false);
 
+        // Inicialización de vistas
         recyclerActividades = root.findViewById(R.id.recyclerActividades);
         tvEmptyActividades = root.findViewById(R.id.tvEmptyActividades);
 
+        // Configurar RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerActividades.setLayoutManager(layoutManager);
         recyclerActividades.setHasFixedSize(true);
-
         SnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerActividades);
 
+        // Preparar lista y adaptador
         itemList = new ArrayList<>();
         actividadAdapter = new ActividadAdapter(
                 requireContext(),
@@ -82,6 +84,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         );
         recyclerActividades.setAdapter(actividadAdapter);
 
+        // Cargar actividades
         cargarActividades();
 
         return root;
@@ -95,6 +98,10 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        tvEmptyActividades.setText("Cargando actividades...");
+        tvEmptyActividades.setVisibility(View.VISIBLE);
+        recyclerActividades.setVisibility(View.GONE);
 
         ApiService api = RetrofitClient.getApiService();
         Call<List<ActividadModel>> call = api.obtenerActividades("Bearer " + token);
@@ -123,8 +130,8 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void procesarActividadesDeAPI(List<ActividadModel> actividadesAPI) {
         executorService.execute(() -> {
             List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
-
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
             Date fechaHoy;
             try {
                 fechaHoy = sdf.parse(sdf.format(new Date()));
@@ -185,6 +192,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEliminar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
+
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -193,7 +201,10 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
 
         btnConfirmar.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Funcionalidad de eliminación no disponible", Toast.LENGTH_SHORT).show();
+            itemList.removeIf(item -> item.getActividadModel() != null && item.getActividadModel().equals(actividad));
+            actividadAdapter.notifyDataSetChanged();
+            Toast.makeText(getContext(), "Actividad eliminada", Toast.LENGTH_SHORT).show();
+            actualizarVisibilidad();
             dialog.dismiss();
         });
 
@@ -203,6 +214,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEditar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_editar_actividad);
+
         EditText etEditarTitulo = dialog.findViewById(R.id.etEditarTitulo);
         EditText etEditarDescripcion = dialog.findViewById(R.id.etEditarDescripcion);
         EditText etEditarFecha = dialog.findViewById(R.id.etEditarFecha);
@@ -222,40 +234,67 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             actividad.setDate(etEditarFecha.getText().toString());
             actividad.setPlace(etEditarLugar.getText().toString());
             actividad.setResponsible(List.of(etEditarResponsables.getText().toString().split(", ")));
-
-            Toast.makeText(getContext(), "Funcionalidad de edición no disponible", Toast.LENGTH_SHORT).show();
+            actividadAdapter.notifyDataSetChanged();
+            Toast.makeText(getContext(), "Cambios guardados", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
 
         dialog.show();
     }
 
-    private void mostrarDialogoDetalles(ActividadModel actividad) {
-        Dialog dialog = new Dialog(requireContext());
+    private void mostrarDialogoDetalles(ActividadModel actividad, View itemView) {
+        Dialog dialog = new Dialog(itemView.getContext());
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(dialog.getWindow().getAttributes());
+        lp.width = (int) (itemView.getResources().getDisplayMetrics().widthPixels * 0.8f); // 80% ancho
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        dialog.getWindow().setAttributes(lp);
+
         TextView tvTituloDetalle = dialog.findViewById(R.id.tvTituloDetalle);
         TextView tvDescripcionDetalle = dialog.findViewById(R.id.tvDescripcionDetalle);
         TextView tvFechaDetalle = dialog.findViewById(R.id.tvFechaDetalle);
         TextView tvLugarDetalle = dialog.findViewById(R.id.tvLugarDetalle);
         TextView tvResponsablesDetalle = dialog.findViewById(R.id.tvResponsablesDetalle);
         Switch switchPromocion = dialog.findViewById(R.id.switchPromocion);
+        Button btnEditar = dialog.findViewById(R.id.btnEditar);
+        Button btnEliminar = dialog.findViewById(R.id.btnEliminar);
+        Button btnVolver = dialog.findViewById(R.id.btnVolver);
 
         tvTituloDetalle.setText(actividad.getTitle());
         tvDescripcionDetalle.setText(actividad.getDescription());
         tvFechaDetalle.setText(actividad.getDate());
         tvLugarDetalle.setText(actividad.getPlace());
         tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
-        switchPromocion.setChecked(actividad.isPromoted());
 
-        dialog.findViewById(R.id.btnVolver).setOnClickListener(v -> dialog.dismiss());
+        if (switchPromocion != null) {
+            switchPromocion.setChecked(actividad.isPromoted());
+            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) ->
+                    Toast.makeText(itemView.getContext(),
+                            isChecked ? "Promocionando: " + actividad.getTitle()
+                                    : "Desactivado: " + actividad.getTitle(),
+                            Toast.LENGTH_SHORT).show());
+        }
 
-        switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                Toast.makeText(getContext(), "Promocionando: " + actividad.getTitle(), Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getContext(), "Desactivado: " + actividad.getTitle(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        if (btnEditar != null) {
+            btnEditar.setOnClickListener(v -> {
+                dialog.dismiss();
+                mostrarDialogoEditar(actividad);
+            });
+        }
+
+        if (btnEliminar != null) {
+            btnEliminar.setOnClickListener(v -> {
+                dialog.dismiss();
+                mostrarDialogoEliminar(actividad);
+            });
+        }
+
+        if (btnVolver != null) {
+            btnVolver.setOnClickListener(v -> dialog.dismiss());
+        }
 
         dialog.show();
     }
@@ -263,6 +302,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void actualizarVisibilidad() {
         recyclerActividades.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
         tvEmptyActividades.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
+        tvEmptyActividades.setText(itemList.isEmpty() ? "No hay actividades disponibles" : "");
     }
 
     @Override

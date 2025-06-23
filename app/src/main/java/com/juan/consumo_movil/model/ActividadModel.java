@@ -1,6 +1,7 @@
 package com.juan.consumo_movil.model;
 
 import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 
 public class ActividadModel {

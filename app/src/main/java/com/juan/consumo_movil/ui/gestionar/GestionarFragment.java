@@ -1,17 +1,19 @@
 package com.juan.consumo_movil.ui.gestionar;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -19,189 +21,221 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.models.AsistenteAdapter;
+import com.juan.consumo_movil.utils.SessionManager;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GestionarFragment extends Fragment {
+public class GestionarFragment extends Fragment implements AsistenteAdapter.OnItemClickListener {
 
-    private GestionarViewModel viewModel;
     private EditText etNombreAsistente, etEmailAsistente;
-    private Button btnAgregarAsistente, btnExportarLista;
-    private LinearLayout containerAsistentes;
-    private AsistenteAdapter asistenteAdapter;
-    private List<Asistente> asistenteList;
-    private String activityId;
+    private Button btnAgregarAsistente;
     private TextView tvTituloActividad, tvEmptyGestion;
-    private int userId;
+    private RecyclerView recyclerView;
+
+    private AsistenteAdapter adapter;
+    private List<Asistente> asistenteList;
+    private GestionarViewModel viewModel;
+    private SessionManager sessionManager;
+
+    private String activityId;
+    private String activityTitle;
+
+    public GestionarFragment() {
+        // Constructor vacío requerido
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.fragment_gestionar, container, false);
+        View view = inflater.inflate(R.layout.fragment_gestionar, container, false);
 
-        SharedPreferences prefs = requireContext().getSharedPreferences("user_prefs", requireContext().MODE_PRIVATE);
-        userId = prefs.getInt("user_id", -1);
-        if (userId == -1) {
-            Toast.makeText(getContext(), "Error: Usuario no identificado", Toast.LENGTH_SHORT).show();
-            return root;
-        }
+        sessionManager = new SessionManager(requireContext());
+        initUI(view);
+        setupRecyclerView();
+
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
         if (getArguments() != null) {
-            activityId = getArguments().getString("activity_id", "");
-            tvTituloActividad.setText(getArguments().getString("activity_title", ""));
-        } else {
-            activityId = "";
-        }
+            activityId = getArguments().getString("activity_id");
+            activityTitle = getArguments().getString("activity_title");
 
-        etNombreAsistente = root.findViewById(R.id.etNombreAsistente);
-        etEmailAsistente = root.findViewById(R.id.etEmailAsistente);
-        btnAgregarAsistente = root.findViewById(R.id.btnAgregarAsistente);
-        containerAsistentes = root.findViewById(R.id.containerAsistentes);
-        tvTituloActividad = root.findViewById(R.id.tvTituloActividad);
-        tvEmptyGestion = root.findViewById(R.id.tvEmptyGestion);
-
-        asistenteList = new ArrayList<>();
-        asistenteAdapter = new AsistenteAdapter(asistenteList,
-                this::mostrarDialogoEditar,
-                this::mostrarDialogoEliminar);
-
-        RecyclerView recyclerView = new RecyclerView(requireContext());
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerView.setAdapter(asistenteAdapter);
-        containerAsistentes.addView(recyclerView);
-
-        viewModel = new ViewModelProvider(this).get(GestionarViewModel.class);
-
-        if (!activityId.isEmpty()) {
+            tvTituloActividad.setText(activityTitle);
+            tvEmptyGestion.setText("No hay asistentes registrados.");
             tvEmptyGestion.setVisibility(View.GONE);
+
             viewModel.cargarAsistentes(activityId);
         } else {
-            tvEmptyGestion.setText("Selecciona una actividad desde la lista para gestionarla.");
+            tvEmptyGestion.setText("Selecciona una actividad desde la lista.");
             tvEmptyGestion.setVisibility(View.VISIBLE);
             tvTituloActividad.setText("");
-            asistenteList.clear();
-            asistenteAdapter.notifyDataSetChanged();
         }
 
         viewModel.getAsistentes().observe(getViewLifecycleOwner(), asistentes -> {
-            asistenteList.clear();
-            asistenteList.addAll(asistentes);
-            asistenteAdapter.notifyDataSetChanged();
-            if (asistenteList.isEmpty() && !activityId.isEmpty()) {
-                tvEmptyGestion.setText("No hay asistentes registrados para esta actividad.");
-                tvEmptyGestion.setVisibility(View.VISIBLE);
-            } else {
-                tvEmptyGestion.setVisibility(View.GONE);
+            if (asistentes != null) {
+                Log.d("GestionarFragment", "Asistentes recibidos: " + asistentes.size());
+                asistenteList.clear();
+                asistenteList.addAll(asistentes);
+                adapter.notifyDataSetChanged();
+                tvEmptyGestion.setVisibility(asistentes.isEmpty() ? View.VISIBLE : View.GONE);
             }
         });
 
         btnAgregarAsistente.setOnClickListener(v -> agregarAsistente());
+    }
 
-        btnExportarLista.setOnClickListener(v -> Toast.makeText(getContext(), "Exportar lista no implementado", Toast.LENGTH_SHORT).show());
+    private void initUI(View view) {
+        etNombreAsistente = view.findViewById(R.id.etNombreAsistente);
+        etEmailAsistente = view.findViewById(R.id.etEmailAsistente);
+        btnAgregarAsistente = view.findViewById(R.id.btnAgregarAsistente);
+        tvTituloActividad = view.findViewById(R.id.tvTituloActividad);
+        tvEmptyGestion = view.findViewById(R.id.tvEmptyGestion);
+        recyclerView = view.findViewById(R.id.containerAsistentes);
+    }
 
-        return root;
+    private void setupRecyclerView() {
+        asistenteList = new ArrayList<>();
+        adapter = new AsistenteAdapter(asistenteList);
+        adapter.setOnItemClickListener(this);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerView.setAdapter(adapter);
+
+        viewModel = new ViewModelProvider(this).get(GestionarViewModel.class);
     }
 
     private void agregarAsistente() {
-        String nombreCompleto = etNombreAsistente.getText().toString().trim();
-        String correo = etEmailAsistente.getText().toString().trim();
+        String nombre = etNombreAsistente.getText().toString().trim();
+        String email = etEmailAsistente.getText().toString().trim();
 
-        if (activityId.isEmpty()) {
-            Toast.makeText(getContext(), "Debes seleccionar una actividad primero", Toast.LENGTH_SHORT).show();
+        if (nombre.isEmpty()) {
+            etNombreAsistente.setError("Campo requerido");
             return;
         }
 
-        if (nombreCompleto.isEmpty()) {
-            etNombreAsistente.setError("El nombre es obligatorio");
-            return;
-        }
-        if (correo.isEmpty()) {
-            etEmailAsistente.setError("El correo es obligatorio");
-            return;
-        }
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+        if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etEmailAsistente.setError("Correo inválido");
             return;
         }
 
-        String primerNombre = nombreCompleto.split(" ")[0];
-
         Asistente asistente = new Asistente();
-        asistente.setIdAsistente(userId);
-        asistente.setIdActividad(Integer.parseInt(activityId));
-        asistente.setNombreCompleto(nombreCompleto);
-        asistente.setNombre(primerNombre);
-        asistente.setCorreo(correo);
-        asistente.setActividadNombre(tvTituloActividad.getText().toString());
+        asistente.setIdAsistente(sessionManager.getUserId());
+        asistente.setIdActividad(activityId);
+        asistente.setNombreCompleto(nombre);
+        asistente.setCorreo(email);
+        asistente.setActividadNombre(activityTitle);
 
-        viewModel.insertarAsistente(asistente);
+        viewModel.insertarAsistente(asistente, activityId);
         etNombreAsistente.setText("");
         etEmailAsistente.setText("");
-        Toast.makeText(getContext(), "Asistente agregado", Toast.LENGTH_SHORT).show();
     }
 
-    private void mostrarDialogoEditar(Asistente asistente) {
-        android.app.Dialog dialog = new android.app.Dialog(requireContext());
-        dialog.setContentView(R.layout.dialogo_editar_asistente);
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-
-        ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
-        EditText etEditarNombre = dialog.findViewById(R.id.etEditarNombre);
-        EditText etEditarCorreo = dialog.findViewById(R.id.etEditarCorreo);
-        Button btnGuardarCambios = dialog.findViewById(R.id.btnGuardarCambios);
-
-        etEditarNombre.setText(asistente.getNombreCompleto() != null ? asistente.getNombreCompleto() : "");
-        etEditarCorreo.setText(asistente.getCorreo() != null ? asistente.getCorreo() : "");
-
-        ivCerrar.setOnClickListener(v -> dialog.dismiss());
-        btnGuardarCambios.setOnClickListener(v -> {
-            String nuevoNombreCompleto = etEditarNombre.getText().toString().trim();
-            String nuevoCorreo = etEditarCorreo.getText().toString().trim();
-
-            if (nuevoNombreCompleto.isEmpty()) {
-                etEditarNombre.setError("El nombre es obligatorio");
-                return;
-            }
-            if (nuevoCorreo.isEmpty()) {
-                etEditarCorreo.setError("El correo es obligatorio");
-                return;
-            }
-            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(nuevoCorreo).matches()) {
-                etEditarCorreo.setError("Correo inválido");
-                return;
-            }
-
-            String primerNombre = nuevoNombreCompleto.contains(" ") ? nuevoNombreCompleto.split(" ")[0] : nuevoNombreCompleto;
-
-            asistente.setNombreCompleto(nuevoNombreCompleto);
-            asistente.setNombre(primerNombre);
-            asistente.setCorreo(nuevoCorreo);
-            asistente.setActividadNombre(tvTituloActividad.getText().toString());
-            viewModel.actualizarAsistente(asistente);
-
-            Toast.makeText(getContext(), "Asistente actualizado", Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
-        });
-
-        dialog.show();
+    @Override
+    public void onItemClick(Asistente asistente) {
+        // Detalles (no implementado)
     }
 
-    private void mostrarDialogoEliminar(Asistente asistente) {
-        android.app.Dialog dialog = new android.app.Dialog(requireContext());
-        dialog.setContentView(R.layout.dialogo_eliminar_asistente);
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-
-        ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
-        Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
-        Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
-
-        ivCerrar.setOnClickListener(v -> dialog.dismiss());
-        btnCancelar.setOnClickListener(v -> dialog.dismiss());
-        btnConfirmar.setOnClickListener(v -> {
-            viewModel.eliminarAsistente(asistente);
-            Toast.makeText(getContext(), "Asistente eliminado", Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
+    @Override
+    public void onEditClick(Asistente asistente) {
+        DialogFragment dialog = new EditAsistenteDialogFragment(asistente, updatedAsistente -> {
+            viewModel.actualizarAsistente(asistente.getId(), updatedAsistente, activityId);
         });
+        dialog.show(getChildFragmentManager(), "EditAsistenteDialog");
+    }
 
-        dialog.show();
+    @Override
+    public void onDeleteClick(Asistente asistente) {
+        DialogFragment dialog = new DeleteAsistenteDialogFragment(asistente, () -> {
+            viewModel.eliminarAsistentePorId(asistente.getId(), activityId);
+        });
+        dialog.show(getChildFragmentManager(), "DeleteAsistenteDialog");
+    }
+
+    public static class EditAsistenteDialogFragment extends DialogFragment {
+        private Asistente asistente;
+        private OnSaveListener listener;
+
+        public interface OnSaveListener {
+            void onSave(Asistente updatedAsistente);
+        }
+
+        public EditAsistenteDialogFragment(Asistente asistente, OnSaveListener listener) {
+            this.asistente = asistente;
+            this.listener = listener;
+        }
+
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View view = inflater.inflate(R.layout.dialogo_editar_asistente, container, false);
+
+            EditText etNombre = view.findViewById(R.id.etEditarNombre);
+            EditText etEmail = view.findViewById(R.id.etEditarCorreo);
+            Button btnGuardarCambios = view.findViewById(R.id.btnGuardarCambios);
+            ImageView ivCerrar = view.findViewById(R.id.ivCerrar);
+
+            etNombre.setText(asistente.getNombreCompleto());
+            etEmail.setText(asistente.getCorreo());
+
+            btnGuardarCambios.setOnClickListener(v -> {
+                String nombre = etNombre.getText().toString().trim();
+                String email = etEmail.getText().toString().trim();
+
+                if (nombre.isEmpty()) {
+                    etNombre.setError("Campo requerido");
+                    return;
+                }
+
+                if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    etEmail.setError("Correo inválido");
+                    return;
+                }
+
+                asistente.setNombreCompleto(nombre);
+                asistente.setCorreo(email);
+
+                listener.onSave(asistente);
+                dismiss();
+            });
+
+            ivCerrar.setOnClickListener(v -> dismiss());
+
+            return view;
+        }
+    }
+
+    public static class DeleteAsistenteDialogFragment extends DialogFragment {
+        private Asistente asistente;
+        private OnDeleteListener listener;
+
+        public interface OnDeleteListener {
+            void onDelete();
+        }
+
+        public DeleteAsistenteDialogFragment(Asistente asistente, OnDeleteListener listener) {
+            this.asistente = asistente;
+            this.listener = listener;
+        }
+
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            View view = inflater.inflate(R.layout.dialogo_eliminar_asistente, container, false);
+
+            Button btnConfirmar = view.findViewById(R.id.btnConfirmar);
+            Button btnCancelar = view.findViewById(R.id.btnCancelar);
+            ImageView ivCerrar = view.findViewById(R.id.ivCerrar);
+
+            btnConfirmar.setOnClickListener(v -> {
+                listener.onDelete();
+                dismiss();
+            });
+
+            btnCancelar.setOnClickListener(v -> dismiss());
+            ivCerrar.setOnClickListener(v -> dismiss());
+
+            return view;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.juan.consumo_movil.models;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,18 +10,24 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.juan.consumo_movil.R;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class AsistenteAdapter extends RecyclerView.Adapter<AsistenteAdapter.AsistenteViewHolder> {
 
-    private List<Asistente> asistenteList;
-    private Consumer<Asistente> onEditClick;
-    private Consumer<Asistente> onDeleteClick;
+    private final List<Asistente> asistentes;
+    private OnItemClickListener listener;
 
-    public AsistenteAdapter(List<Asistente> asistenteList, Consumer<Asistente> onEditClick, Consumer<Asistente> onDeleteClick) {
-        this.asistenteList = asistenteList;
-        this.onEditClick = onEditClick;
-        this.onDeleteClick = onDeleteClick;
+    public interface OnItemClickListener {
+        void onItemClick(Asistente asistente);
+        void onEditClick(Asistente asistente);
+        void onDeleteClick(Asistente asistente);
+    }
+
+    public AsistenteAdapter(List<Asistente> asistentes) {
+        this.asistentes = asistentes;
+    }
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
     }
 
     @NonNull
@@ -32,28 +39,46 @@ public class AsistenteAdapter extends RecyclerView.Adapter<AsistenteAdapter.Asis
 
     @Override
     public void onBindViewHolder(@NonNull AsistenteViewHolder holder, int position) {
-        Asistente asistente = asistenteList.get(position);
-        holder.tvNombreAsistente.setText(asistente.getNombre() != null ? asistente.getNombre() : "");
-        holder.tvEmailAsistente.setText(asistente.getCorreoAbreviado());
-        holder.btnEditarAsistente.setOnClickListener(v -> onEditClick.accept(asistente));
-        holder.btnEliminarAsistente.setOnClickListener(v -> onDeleteClick.accept(asistente));
+        Asistente asistente = asistentes.get(position);
+        holder.bind(asistente, listener);
     }
 
     @Override
     public int getItemCount() {
-        return asistenteList.size();
+        return asistentes.size();
     }
 
     static class AsistenteViewHolder extends RecyclerView.ViewHolder {
-        TextView tvNombreAsistente, tvEmailAsistente;
-        ImageButton btnEditarAsistente, btnEliminarAsistente;
+
+        TextView tvNombre, tvCorreo;
+        ImageButton btnEditar, btnEliminar;
 
         public AsistenteViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvNombreAsistente = itemView.findViewById(R.id.tvNombreAsistente);
-            tvEmailAsistente = itemView.findViewById(R.id.tvEmailAsistente);
-            btnEditarAsistente = itemView.findViewById(R.id.btnEditarAsistente);
-            btnEliminarAsistente = itemView.findViewById(R.id.btnEliminarAsistente);
+            tvNombre = itemView.findViewById(R.id.tvNombreAsistente);
+            tvCorreo = itemView.findViewById(R.id.tvEmailAsistente);
+            btnEditar = itemView.findViewById(R.id.btnEditarAsistente);
+            btnEliminar = itemView.findViewById(R.id.btnEliminarAsistente);
+        }
+
+        public void bind(Asistente asistente, OnItemClickListener listener) {
+            // Use getNombre() instead of getNombreCompleto()
+            String nombre = asistente.getNombre();
+            Log.d("AsistenteAdapter", "Nombre: " + nombre + ", Correo: " + asistente.getCorreo());
+            tvNombre.setText(nombre != null && !nombre.isEmpty() ? nombre : "Sin nombre");
+            tvCorreo.setText(asistente.getCorreo() != null ? asistente.getCorreo() : "Sin correo");
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onItemClick(asistente);
+            });
+
+            btnEditar.setOnClickListener(v -> {
+                if (listener != null) listener.onEditClick(asistente);
+            });
+
+            btnEliminar.setOnClickListener(v -> {
+                if (listener != null) listener.onDeleteClick(asistente);
+            });
         }
     }
 }

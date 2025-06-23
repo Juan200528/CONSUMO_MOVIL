@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class SessionManager {
-
     private static final String PREF_NAME = "user_session";
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_USERNAME = "username";
@@ -42,43 +41,25 @@ public class SessionManager {
         editor.apply();
     }
 
-    public String getUserId() {
-        return sharedPreferences.getString(KEY_USER_ID, null);
-    }
-
-    public String getUsername() {
-        return sharedPreferences.getString(KEY_USERNAME, null);
-    }
-
-    public String getEmail() {
-        return sharedPreferences.getString(KEY_EMAIL, null);
-    }
-
-    public String getPhone() {
-        return sharedPreferences.getString(KEY_PHONE, null);
-    }
-
-    public String getAddress() {
-        return sharedPreferences.getString(KEY_ADDRESS, null);
-    }
-
-    public String getToken() {
-        return sharedPreferences.getString(KEY_TOKEN, null);
-    }
+    public String getUserId() { return sharedPreferences.getString(KEY_USER_ID, null); }
+    public String getUsername() { return sharedPreferences.getString(KEY_USERNAME, null); }
+    public String getEmail() { return sharedPreferences.getString(KEY_EMAIL, null); }
+    public String getPhone() { return sharedPreferences.getString(KEY_PHONE, null); }
+    public String getAddress() { return sharedPreferences.getString(KEY_ADDRESS, null); }
+    public String getToken() { return sharedPreferences.getString(KEY_TOKEN, null); }
 
     public boolean isLoggedIn() {
         return sharedPreferences.getBoolean(KEY_LOGGED_IN, false);
+    }
+
+    public String fetchAuthToken() {
+        String token = getToken();
+        return (token != null && !token.isEmpty()) ? "Bearer " + token : null;
     }
 
     public void cerrarSesion() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
         editor.apply();
-    }
-
-    // ✅ Nuevo método agregado
-    public String fetchAuthToken() {
-        String token = getToken();
-        return (token != null && !token.isEmpty()) ? "Bearer " + token : null;
     }
 }

@@ -1,6 +1,5 @@
 package com.juan.consumo_movil.ui.promocionadas;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,26 +13,48 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.model.ActividadModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Adaptador para mostrar actividades promocionadas en un RecyclerView.
+ */
 public class PromocionadasAdapter extends RecyclerView.Adapter<PromocionadasAdapter.PromocionadaViewHolder> {
 
-    private final List<ActividadModel> actividadesPromocionadas;
+    private List<ActividadModel> actividadesPromocionadas;
     private final OnDetallesClickListener onDetallesClickListener;
 
+    /**
+     * Interfaz para manejar clics en "Ver Detalles"
+     */
     public interface OnDetallesClickListener {
         void onDetallesClick(ActividadModel actividadModel);
     }
 
-    public PromocionadasAdapter(List<ActividadModel> actividadesPromocionadas, OnDetallesClickListener onDetallesClickListener) {
-        this.actividadesPromocionadas = actividadesPromocionadas;
+    public PromocionadasAdapter(@NonNull List<ActividadModel> actividadesPromocionadas,
+                                @NonNull OnDetallesClickListener onDetallesClickListener) {
+        this.actividadesPromocionadas = actividadesPromocionadas != null
+                ? new ArrayList<>(actividadesPromocionadas)
+                : new ArrayList<>();
         this.onDetallesClickListener = onDetallesClickListener;
+    }
+
+    /**
+     * Método para actualizar la lista de actividades desde fuera del adaptador
+     */
+    public void updateList(@NonNull List<ActividadModel> nuevaLista) {
+        if (nuevaLista != null) {
+            actividadesPromocionadas.clear();
+            actividadesPromocionadas.addAll(nuevaLista);
+            notifyDataSetChanged();
+        }
     }
 
     @NonNull
     @Override
     public PromocionadaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_actividad_promocionada, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_actividad_promocionada, parent, false);
         return new PromocionadaViewHolder(view);
     }
 
@@ -49,6 +70,7 @@ public class PromocionadasAdapter extends RecyclerView.Adapter<PromocionadasAdap
     }
 
     static class PromocionadaViewHolder extends RecyclerView.ViewHolder {
+
         TextView tvTituloActividadPromocionada;
         ImageView ivActividadImagenPromocionada;
         Button btnVerDetallesPromocionada;
@@ -60,14 +82,19 @@ public class PromocionadasAdapter extends RecyclerView.Adapter<PromocionadasAdap
             btnVerDetallesPromocionada = itemView.findViewById(R.id.btnVerDetallesPromocionada);
         }
 
-        public void bind(ActividadModel actividadModel, OnDetallesClickListener onDetallesClickListener) {
-            tvTituloActividadPromocionada.setText(actividadModel.getTitle());
-            // Configurar imagen si es necesario
-            btnVerDetallesPromocionada.setOnClickListener(v -> {
-                if (onDetallesClickListener != null) {
-                    onDetallesClickListener.onDetallesClick(actividadModel);
-                }
-            });
+        public void bind(ActividadModel actividadModel, OnDetallesClickListener listener) {
+            if (actividadModel != null) {
+                tvTituloActividadPromocionada.setText(actividadModel.getTitle());
+
+                // Ejemplo de carga de imagen con Glide (si usas librería externa)
+                // Glide.with(itemView).load(actividadModel.getImageUrl()).into(ivActividadImagenPromocionada);
+
+                btnVerDetallesPromocionada.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onDetallesClick(actividadModel);
+                    }
+                });
+            }
         }
     }
 }

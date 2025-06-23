@@ -32,7 +32,7 @@
         android:id="@+id/tvEmptyGestion"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Selecciona actividad para gestionar asistencia /nPresiona el boton Asistentes + de tu actividad"
+        android:text="Selecciona actividad para gestionar asistencia\nPresiona el boton Asistentes + de tu actividad"
         android:textAlignment="center"
         android:layout_marginBottom="18dp"
         android:textSize="16sp"
@@ -162,7 +162,7 @@
             </LinearLayout>
 
             <!-- Contenedor para asistentes (se llenará dinámicamente) -->
-            <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/containerAsistentes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
