@@ -29,5 +29,6 @@
     <!--   Colores específicos para la app   -->
     <color name="colorPrimarySolidario">#FF4CAF50</color>
     <color name="colorAccentSolidario">#FF8BC34A</color>
+    <color name="colorLink">#0000EE</color>
 
 </resources>

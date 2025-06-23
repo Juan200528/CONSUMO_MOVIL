@@ -35,7 +35,7 @@ import retrofit2.Response;
 public class InicioSesion extends AppCompatActivity {
     private EditText etCorreo, etContrasena;
     private Button btnIniciarSesion;
-    private TextView tvRegistrarse;
+    private TextView tvRegistrarse, tvOlvidoContrasena;
     private SessionManager sessionManager;
 
     @Override
@@ -56,10 +56,11 @@ public class InicioSesion extends AppCompatActivity {
         etContrasena = findViewById(R.id.etContrasena);
         btnIniciarSesion = findViewById(R.id.btnIniciarSesion);
         tvRegistrarse = findViewById(R.id.tvRegistro);
+        tvOlvidoContrasena = findViewById(R.id.tvOlvidoContrasena); // Nuevo
 
-        // Configurar campo de contraseña
+        // Configurar campo de contraseña: mostrar solo al mantener pulsado
         etContrasena.setTransformationMethod(PasswordTransformationMethod.getInstance());
-        setupPasswordToggle(etContrasena); // <-- Añadimos el toggle de mostrar/ocultar
+        setupPasswordToggle(etContrasena);
 
         // Aplicar efecto visual al botón
         setupLoginButtonWithStateEffect();
@@ -85,8 +86,8 @@ public class InicioSesion extends AppCompatActivity {
             @Override
             public void updateDrawState(TextPaint ds) {
                 super.updateDrawState(ds);
-                ds.setColor(Color.BLUE); // Color azul para "Regístrate"
-                ds.setUnderlineText(false); // Opcional: quitar subrayado
+                ds.setColor(Color.BLUE);
+                ds.setUnderlineText(false);
             }
         };
 
@@ -96,30 +97,48 @@ public class InicioSesion extends AppCompatActivity {
         spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         tvRegistrarse.setText(spannableString);
         tvRegistrarse.setMovementMethod(LinkMovementMethod.getInstance());
-        tvRegistrarse.setHighlightColor(Color.TRANSPARENT); // Quitar resaltado al hacer clic
+        tvRegistrarse.setHighlightColor(Color.TRANSPARENT);
+
+        // Acción para "Olvidé mi contraseña"
+        tvOlvidoContrasena.setOnClickListener(v -> {
+            //  Intent intent = new Intent(InicioSesion.this, RecuperarContrasena.class);
+            //  startActivity(intent);
+        });
     }
 
     private void setupPasswordToggle(final EditText editText) {
+        // Establecer ícono inicial del ojo apagado
         editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
         editText.setCompoundDrawablePadding(10);
 
         editText.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (event.getRawX() >= (editText.getRight() - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width() - editText.getCompoundDrawablePadding())) {
-                    if (editText.getTransformationMethod() == null) {
-                        // Ocultar contraseña
-                        editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                        editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
-                    } else {
-                        // Mostrar contraseña
-                        editText.setTransformationMethod(null);
-                        editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
-                    }
-                    editText.setSelection(editText.getText().length());
+
+            // Calcular posición exacta del icono derecho
+            int drawableRightStart = editText.getRight()
+                    - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
+                    - editText.getCompoundDrawablePadding();
+
+            if (event.getAction() == MotionEvent.ACTION_DOWN ||
+                    event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                // Si está tocando el ícono del ojo
+                if (event.getRawX() >= drawableRightStart) {
+                    // Mostrar contraseña temporalmente
+                    editText.setTransformationMethod(null);
+                    editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
                     return true;
                 }
+            } else if (event.getAction() == MotionEvent.ACTION_UP ||
+                    event.getAction() == MotionEvent.ACTION_CANCEL) {
+
+                // Volver a ocultar la contraseña
+                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
+                editText.setSelection(editText.getText().length());
+                return true;
             }
+
             return false;
         });
     }
@@ -218,6 +237,6 @@ public class InicioSesion extends AppCompatActivity {
         Intent intent = new Intent(InicioSesion.this, MenuActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
-        finish(); // Cierra esta actividad para que no regrese por el back
+        finish();
     }
 }

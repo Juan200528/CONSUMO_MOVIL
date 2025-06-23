@@ -57,6 +57,20 @@
         android:layout_marginTop="12dp"
         android:padding="12dp" />
 
+    <!-- Olvidé mi contraseña -->
+    <TextView
+        android:id="@+id/tvOlvidoContrasena"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Olvidé mi contraseña"
+        android:textColor="@color/colorLink"
+        android:textStyle="italic"
+        android:layout_marginTop="8dp"
+        android:layout_gravity="end"
+        android:paddingEnd="12dp"
+        android:clickable="true"
+        android:focusable="true"/>
+
     <!-- Espacio vertical -->
     <Space
         android:layout_width="0dp"

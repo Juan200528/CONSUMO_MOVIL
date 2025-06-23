@@ -57,10 +57,8 @@ public class Registro extends AppCompatActivity {
 
         // TextView "¿Ya tienes cuenta? Entrar"
         TextView loginLinkTextView = findViewById(R.id.loginLinkTextView);
-
         String originalText = "¿Ya tienes cuenta? Entrar";
         SpannableString spannableString = new SpannableString(originalText);
-
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(View widget) {
@@ -78,14 +76,12 @@ public class Registro extends AppCompatActivity {
 
         int startIndex = originalText.indexOf("Entrar");
         int endIndex = startIndex + "Entrar".length();
-
         spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
         loginLinkTextView.setText(spannableString);
         loginLinkTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
         loginLinkTextView.setHighlightColor(Color.TRANSPARENT); // Sin resaltado al hacer clic
 
-        // Configurar campos de contraseña para mostrar/ocultar
+        // Configurar campos de contraseña para mostrar SOLO AL MANTENER PRESIONADO
         setupPasswordField(passwordEditText);
         setupPasswordField(confirmPasswordEditText);
 
@@ -96,26 +92,40 @@ public class Registro extends AppCompatActivity {
     }
 
     private void setupPasswordField(EditText editText) {
+        // Ocultar contraseña por defecto
         editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+        // Establecer ícono del ojo cerrado
         editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
         editText.setCompoundDrawablePadding(10);
+
         editText.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (event.getRawX() >= (editText.getRight() - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width() - editText.getCompoundDrawablePadding())) {
-                    if (editText.getTransformationMethod() == null) {
-                        // Ocultar contraseña
-                        editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                        editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
-                    } else {
-                        // Mostrar contraseña
-                        editText.setTransformationMethod(null);
-                        editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
-                    }
-                    editText.setSelection(editText.getText().length());
+
+            // Calcular posición exacta del icono derecho
+            int drawableRightStart = editText.getRight()
+                    - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
+                    - editText.getCompoundDrawablePadding();
+
+            if (event.getAction() == MotionEvent.ACTION_DOWN ||
+                    event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                // Si está tocando el ícono del ojo
+                if (event.getRawX() >= drawableRightStart) {
+                    // Mostrar contraseña temporalmente
+                    editText.setTransformationMethod(null);
+                    editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
                     return true;
                 }
+            } else if (event.getAction() == MotionEvent.ACTION_UP ||
+                    event.getAction() == MotionEvent.ACTION_CANCEL) {
+
+                // Volver a ocultar la contraseña
+                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
+                editText.setSelection(editText.getText().length());
+                return true;
             }
+
             return false;
         });
     }
