@@ -70,7 +70,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerActividades.setLayoutManager(layoutManager);
         recyclerActividades.setHasFixedSize(true);
-
         SnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerActividades);
 
@@ -92,10 +91,15 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         return root;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        cargarActividades(); // Recarga las actividades cada vez que se muestra el fragmento
+    }
+
     public void cargarActividades() {
         SessionManager sessionManager = new SessionManager(requireContext());
         String token = sessionManager.getToken();
-
         if (token == null || token.isEmpty()) {
             Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
@@ -107,7 +111,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         ApiService api = RetrofitClient.getApiService();
         Call<List<ActividadModel>> call = api.obtenerActividades("Bearer " + token);
-
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
@@ -176,10 +179,8 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                         return 0;
                     }
                 });
-
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
                         getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
-
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
             }
 
@@ -188,6 +189,11 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 itemList.addAll(tempItemList);
                 actividadAdapter.notifyDataSetChanged();
                 actualizarVisibilidad();
+
+                // Desplazar automáticamente hacia arriba si hay elementos
+                if (!itemList.isEmpty()) {
+                    recyclerActividades.smoothScrollToPosition(0); // O usar scrollToPosition(0)
+                }
             });
         });
     }
@@ -195,7 +201,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEliminar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
-
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -217,7 +222,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEditar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_editar_actividad);
-
         EditText etEditarTitulo = dialog.findViewById(R.id.etEditarTitulo);
         EditText etEditarDescripcion = dialog.findViewById(R.id.etEditarDescripcion);
         EditText etEditarFecha = dialog.findViewById(R.id.etEditarFecha);
@@ -249,7 +253,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         Dialog dialog = new Dialog(itemView.getContext());
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
         lp.width = (int) (itemView.getResources().getDisplayMetrics().widthPixels * 0.8f); // 80% ancho
@@ -265,7 +268,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         Button btnEditar = dialog.findViewById(R.id.btnEditar);
         Button btnEliminar = dialog.findViewById(R.id.btnEliminar);
         Button btnVolver = dialog.findViewById(R.id.btnVolver);
-        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle); // ImageView para la imagen
+        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle);
 
         tvTituloDetalle.setText(actividad.getTitle());
         tvDescripcionDetalle.setText(actividad.getDescription());
@@ -273,7 +276,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         tvLugarDetalle.setText(actividad.getPlace());
         tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
 
-        // Cargar imagen si está disponible
         if (actividad.getImage() != null && !actividad.getImage().isEmpty()) {
             Glide.with(this)
                     .load(actividad.getImage())
@@ -317,7 +319,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void actualizarVisibilidad() {
         recyclerActividades.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
         tvEmptyActividades.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
-
         if (itemList.isEmpty()) {
             tvEmptyActividades.setText("No hay actividades disponibles");
         }
