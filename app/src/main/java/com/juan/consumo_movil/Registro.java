@@ -17,12 +17,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.widget.TextViewCompat;
 
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
@@ -30,7 +29,6 @@ import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
 import com.juan.consumo_movil.utils.SessionManager;
 
-import java.util.List;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -140,6 +138,7 @@ public class Registro extends AppCompatActivity {
         String password = passwordEditText.getText().toString().trim();
         String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
+        // Validaciones básicas
         if (TextUtils.isEmpty(nombreCompleto)) {
             fullNameEditText.setError("Ingrese su nombre completo");
             fullNameEditText.requestFocus();
@@ -194,10 +193,12 @@ public class Registro extends AppCompatActivity {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 isRegistering = false;
+
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
-                    String tokenCookie = null;
 
+                    // Buscar token en headers
+                    String tokenCookie = null;
                     for (int i = 0; i < response.headers().size(); i++) {
                         String name = response.headers().name(i);
                         String value = response.headers().value(i);
@@ -210,9 +211,11 @@ public class Registro extends AppCompatActivity {
                     }
 
                     if (tokenCookie == null || tokenCookie.isEmpty()) {
+                        Toast.makeText(Registro.this, "Error al iniciar sesión automáticamente", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
+                    // Guardar sesión
                     sessionManager.guardarToken(tokenCookie);
                     sessionManager.guardarSesion(
                             Objects.requireNonNull(loginResponse.getId()).toString(),
@@ -221,15 +224,22 @@ public class Registro extends AppCompatActivity {
                             "N/A"
                     );
 
+                    // Navegación rápida y sin retrasos
                     Intent intent = new Intent(Registro.this, MenuActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                     finish();
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+
+                } else {
+                    Toast.makeText(Registro.this, "El registro no fue posible. Inténtalo nuevamente.", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
                 isRegistering = false;
+                Toast.makeText(Registro.this, "No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.", Toast.LENGTH_LONG).show();
             }
         });
     }

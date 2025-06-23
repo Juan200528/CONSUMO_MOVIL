@@ -2,6 +2,7 @@ package com.juan.consumo_movil;
 
 import android.Manifest;
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -10,14 +11,16 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -44,17 +47,21 @@ import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 
 public class CrearActividad extends AppCompatActivity {
     private static final int PICK_IMAGE = 1;
     private static final int PERM_REQ = 100;
 
     private EditText etTitulo, etDesc, etFecha, etLugar, etResp;
-    private ImageButton btnSubir, btnDate;
     private ImageView ivImg;
     private File imgFile;
     private ApiService api;
     private SessionManager sessionManager;
+    private Button btnCrear;
+    private FrameLayout flImagenContenedor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,23 +74,71 @@ public class CrearActividad extends AppCompatActivity {
         etFecha = findViewById(R.id.etFecha);
         etLugar = findViewById(R.id.etLugar);
         etResp = findViewById(R.id.etResponsables);
-        btnSubir = findViewById(R.id.btnSubir);
-        btnDate = findViewById(R.id.btnCalendario);
         ivImg = findViewById(R.id.ivActividadImagen);
+        flImagenContenedor = findViewById(R.id.flImagenContenedor);
+        btnCrear = findViewById(R.id.btnCrear);
 
         api = RetrofitClient.getApiService();
         sessionManager = new SessionManager(this);
 
-        btnDate.setOnClickListener(v -> showDatePicker());
-        btnSubir.setOnClickListener(v -> pickImage());
-        findViewById(R.id.btnCrear).setOnClickListener(v -> upload());
+        // Configurar botón "Crear"
+        setupCreateButtonWithStateEffect();
+
+        // Configurar listeners
+        flImagenContenedor.setOnClickListener(v -> pickImage());
+        etFecha.setFocusable(false); // Evitar edición manual
+        etFecha.setOnClickListener(v -> showDatePicker());
+
+        // ✅ Listener del botón del calendario
+        findViewById(R.id.btnCalendario).setOnClickListener(v -> showDatePicker());
+
+        btnCrear.setOnClickListener(v -> upload());
+    }
+
+    private void setupCreateButtonWithStateEffect() {
+        GradientDrawable gradientDrawableNormal = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{Color.parseColor("#03683E"), Color.parseColor("#064349")});
+        gradientDrawableNormal.setCornerRadius(80f);
+
+        GradientDrawable gradientDrawablePressed = new GradientDrawable();
+        gradientDrawablePressed.setColor(Color.parseColor("#063449"));
+        gradientDrawablePressed.setCornerRadius(80f);
+
+        StateListDrawable stateListDrawable = new StateListDrawable();
+        stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, gradientDrawablePressed);
+        stateListDrawable.addState(new int[]{}, gradientDrawableNormal);
+
+        btnCrear.setBackground(stateListDrawable);
     }
 
     private void showDatePicker() {
         Calendar c = Calendar.getInstance();
-        new DatePickerDialog(this, (view, year, month, dayOfMonth) ->
-                etFecha.setText(String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)),
-                c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+
+        // Usamos ContextThemeWrapper para aplicar el estilo dinámico
+        ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(this, R.style.DatePickerTheme_Custom);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                contextThemeWrapper,
+                (view, year, month, dayOfMonth) -> {
+                    String selectedDate = String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month + 1, dayOfMonth);
+                    etFecha.setText(selectedDate);
+                },
+                c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)
+        );
+
+        // Cambiar color de los botones positivo/negativo
+        datePickerDialog.setOnShowListener(dialogInterface -> {
+            try {
+                DatePickerDialog d = (DatePickerDialog) dialogInterface;
+                d.getButton(DatePickerDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#FF4CAF50"));
+                d.getButton(DatePickerDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#FF4CAF50"));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        datePickerDialog.show();
     }
 
     private boolean storagePerm() {
@@ -213,6 +268,7 @@ public class CrearActividad extends AppCompatActivity {
             @Override
             public void onFailure(Call<ActividadModel> call, Throwable t) {
                 cleanupTempFile();
+                Toast.makeText(CrearActividad.this, "Error al crear la actividad. Inténtalo más tarde.", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -235,10 +291,7 @@ public class CrearActividad extends AppCompatActivity {
 
     private void cleanupTempFile() {
         if (imgFile != null && imgFile.exists()) {
-            boolean deleted = imgFile.delete();
-            if (!deleted) {
-                Log.w("CrearActividad", "No se pudo eliminar archivo temporal");
-            }
+            imgFile.delete();
         }
     }
 }

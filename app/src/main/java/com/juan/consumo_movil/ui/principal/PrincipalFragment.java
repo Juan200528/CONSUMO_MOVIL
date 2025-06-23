@@ -2,8 +2,11 @@ package com.juan.consumo_movil.ui.principal;
 
 import android.app.Dialog;
 import android.app.DatePickerDialog;
+import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,21 +41,26 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class PrincipalFragment extends Fragment implements ActividadAdapter.OnActividadClickListener {
-
     private static final String TAG = "PrincipalFragment";
     private RecyclerView recyclerActividades;
     private TextView tvEmptyActividades;
     private ActividadAdapter actividadAdapter;
     private List<ActividadAdapter.Item> itemList;
-    private SessionManager sessionManager;
+    private ExecutorService executorService;
 
-    private boolean isLoading = false;
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        executorService = Executors.newSingleThreadExecutor();
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -62,7 +70,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         recyclerActividades = root.findViewById(R.id.recyclerActividades);
         tvEmptyActividades = root.findViewById(R.id.tvEmptyActividades);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerActividades.setLayoutManager(layoutManager);
         recyclerActividades.setHasFixedSize(true);
 
@@ -92,14 +100,10 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     }
 
     public void cargarActividades() {
-        if (isLoading) return; // Evita duplicados
-        isLoading = true;
-
-        sessionManager = new SessionManager(requireContext());
+        SessionManager sessionManager = new SessionManager(requireContext());
         String token = sessionManager.getToken();
-
         if (token == null || token.isEmpty()) {
-            isLoading = false;
+            Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -113,85 +117,88 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
-                isLoading = false;
                 if (response.isSuccessful() && response.body() != null) {
                     procesarActividadesDeAPI(response.body());
                 } else {
                     Log.e(TAG, "Error al obtener actividades. Código: " + response.code());
+                    Toast.makeText(getContext(), "Error al cargar actividades", Toast.LENGTH_SHORT).show();
                     actualizarVisibilidad();
                 }
             }
 
             @Override
             public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
-                isLoading = false;
                 Log.e(TAG, "Fallo de conexión", t);
+                Toast.makeText(getContext(), "No se pudo conectar con el servidor", Toast.LENGTH_SHORT).show();
                 actualizarVisibilidad();
             }
         });
     }
 
     private void procesarActividadesDeAPI(List<ActividadModel> actividadesAPI) {
-        List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-
-        Date fechaHoy;
-        try {
-            fechaHoy = sdf.parse(sdf.format(new Date()));
-        } catch (ParseException e) {
-            fechaHoy = new Date();
-        }
-
-        List<ActividadModel> actividadesActuales = new ArrayList<>();
-        List<ActividadModel> actividadesPasadas = new ArrayList<>();
-
-        for (ActividadModel act : actividadesAPI) {
+        executorService.execute(() -> {
+            List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            Date fechaHoy;
             try {
-                Date fechaActividad = sdf.parse(act.getDate());
-                if (fechaActividad.before(fechaHoy)) {
-                    actividadesPasadas.add(act);
-                } else {
+                fechaHoy = sdf.parse(sdf.format(new Date()));
+            } catch (ParseException e) {
+                fechaHoy = new Date();
+            }
+
+            List<ActividadModel> actividadesActuales = new ArrayList<>();
+            List<ActividadModel> actividadesPasadas = new ArrayList<>();
+
+            for (ActividadModel act : actividadesAPI) {
+                try {
+                    Date fechaActividad = sdf.parse(act.getDate());
+                    if (fechaActividad.before(fechaHoy)) {
+                        actividadesPasadas.add(act);
+                    } else {
+                        actividadesActuales.add(act);
+                    }
+                } catch (ParseException e) {
                     actividadesActuales.add(act);
                 }
-            } catch (ParseException e) {
-                actividadesActuales.add(act);
             }
-        }
 
-        Collections.sort(actividadesActuales, (a1, a2) -> {
-            try {
-                return sdf.parse(a1.getDate()).compareTo(sdf.parse(a2.getDate()));
-            } catch (ParseException e) {
-                return 0;
-            }
-        });
-
-        for (ActividadModel act : actividadesActuales) {
-            tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_ACTIVIDAD, act, null, null));
-        }
-
-        if (!actividadesPasadas.isEmpty()) {
-            Collections.sort(actividadesPasadas, (a1, a2) -> {
+            Collections.sort(actividadesActuales, (a1, a2) -> {
                 try {
-                    return sdf.parse(a2.getDate()).compareTo(sdf.parse(a1.getDate()));
+                    return sdf.parse(a1.getDate()).compareTo(sdf.parse(a2.getDate()));
                 } catch (ParseException e) {
                     return 0;
                 }
             });
 
-            tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
-                    getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
-            tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
-        }
+            for (ActividadModel act : actividadesActuales) {
+                tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_ACTIVIDAD, act, null, null));
+            }
 
-        itemList.clear();
-        itemList.addAll(tempItemList);
-        actividadAdapter.notifyDataSetChanged();
-        actualizarVisibilidad();
+            if (!actividadesPasadas.isEmpty()) {
+                Collections.sort(actividadesPasadas, (a1, a2) -> {
+                    try {
+                        return sdf.parse(a2.getDate()).compareTo(sdf.parse(a1.getDate()));
+                    } catch (ParseException e) {
+                        return 0;
+                    }
+                });
 
-        if (!itemList.isEmpty()) {
-            recyclerActividades.smoothScrollToPosition(0);
-        }
+                tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
+                        getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
+
+                tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
+            }
+
+            requireActivity().runOnUiThread(() -> {
+                itemList.clear();
+                itemList.addAll(tempItemList);
+                actividadAdapter.notifyDataSetChanged();
+                actualizarVisibilidad();
+                if (!itemList.isEmpty()) {
+                    recyclerActividades.smoothScrollToPosition(0);
+                }
+            });
+        });
     }
 
     private void mostrarDialogoEliminar(ActividadModel actividad) {
@@ -206,26 +213,26 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
 
         btnConfirmar.setOnClickListener(v -> {
+            SessionManager sessionManager = new SessionManager(requireContext());
             String token = sessionManager.getToken();
             if (token == null || token.isEmpty()) {
-                Toast.makeText(getContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
                 return;
             }
 
             ApiService api = RetrofitClient.getApiService();
             Call<Void> call = api.eliminarActividad("Bearer " + token, actividad.getId());
-
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
                     if (response.isSuccessful()) {
                         itemList.removeIf(item -> item.getActividadModel() != null &&
-                                item.getActividadModel().getId().equals(actividad.getId()));
+                                item.getActividadModel().equals(actividad));
                         actividadAdapter.notifyDataSetChanged();
                         Toast.makeText(getContext(), "Actividad eliminada", Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(getContext(), "No se pudo eliminar", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Error al eliminar del servidor", Toast.LENGTH_SHORT).show();
                     }
                     dialog.dismiss();
                     actualizarVisibilidad();
@@ -260,7 +267,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         etEditarLugar.setText(actividad.getPlace());
         etEditarResponsables.setText(String.join(", ", actividad.getResponsible()));
 
-        // Solo permitir abrir calendario, sin teclado
+        // Evitar teclado y abrir calendario
         etEditarFecha.setKeyListener(null);
         etEditarFecha.setFocusable(false);
         etEditarFecha.setOnClickListener(v -> mostrarCalendario(etEditarFecha));
@@ -270,23 +277,22 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             actividad.setDescription(etEditarDescripcion.getText().toString());
             actividad.setDate(etEditarFecha.getText().toString());
             actividad.setPlace(etEditarLugar.getText().toString());
-            String[] responsables = etEditarResponsables.getText().toString().split(", ");
-            actividad.setResponsible(List.of(responsables));
+            actividad.setResponsible(List.of(etEditarResponsables.getText().toString().split(", ")));
+
             actividadAdapter.notifyDataSetChanged();
             Toast.makeText(getContext(), "Cambios guardados", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
 
         ivCerrar.setOnClickListener(v -> dialog.dismiss());
-
         dialog.show();
     }
 
     private void mostrarCalendario(EditText editTextFecha) {
         String fechaActual = editTextFecha.getText().toString();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-
         Calendar cal = Calendar.getInstance();
+
         if (!fechaActual.isEmpty()) {
             try {
                 cal.setTime(sdf.parse(fechaActual));
@@ -299,8 +305,10 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
 
+        ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(requireContext(), R.style.DatePickerTheme_Custom);
+
         DatePickerDialog datePickerDialog = new DatePickerDialog(
-                requireContext(),
+                contextThemeWrapper,
                 (view, year1, month1, day1) -> {
                     Calendar selectedDate = Calendar.getInstance();
                     selectedDate.set(year1, month1, day1);
@@ -309,6 +317,17 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 },
                 year, month, day
         );
+
+        // Cambiar color de los botones positivo/negativo
+        datePickerDialog.setOnShowListener(dialogInterface -> {
+            try {
+                DatePickerDialog d = (DatePickerDialog) dialogInterface;
+                d.getButton(DatePickerDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#FF4CAF50"));
+                d.getButton(DatePickerDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#FF4CAF50"));
+            } catch (Exception e) {
+                Log.e("DatePicker", "Error al cambiar color de botones", e);
+            }
+        });
 
         datePickerDialog.show();
     }
@@ -330,19 +349,14 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         if (tvTituloDetalle != null)
             tvTituloDetalle.setText(actividad.getTitle());
-
         if (tvDescripcionDetalle != null)
             tvDescripcionDetalle.setText(actividad.getDescription());
-
         if (tvFechaDetalle != null)
             tvFechaDetalle.setText(actividad.getDate());
-
         if (tvLugarDetalle != null)
             tvLugarDetalle.setText(actividad.getPlace());
-
         if (tvResponsablesDetalle != null)
             tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
-
         if (ivImagenDetalle != null) {
             if (actividad.getImage() != null && !actividad.getImage().isEmpty()) {
                 Glide.with(this)
@@ -391,6 +405,12 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         if (itemList.isEmpty()) {
             tvEmptyActividades.setText("No hay actividades disponibles");
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executorService.shutdown();
     }
 
     @Override
