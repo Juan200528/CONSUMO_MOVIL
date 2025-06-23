@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
@@ -55,18 +56,22 @@ public class ListaFragment extends Fragment implements
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_lista, container, false);
 
+        // Inicializar vistas
         recyclerView = view.findViewById(R.id.recyclerLista);
         btnBuscar = view.findViewById(R.id.btnBuscarLupa);
         tvEmpty = view.findViewById(R.id.tvEmptyLista);
         sessionManager = new SessionManager(requireContext());
         miUsuarioId = sessionManager.getUserId();
 
+        // Configurar RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new ActividadAdapterLista(actividadList, this, this, this, sessionManager);
         recyclerView.setAdapter(adapter);
 
+        // Cargar datos iniciales
         cargarActividadesIniciales();
 
+        // Botón de búsqueda
         btnBuscar.setOnClickListener(v -> mostrarDialogoBusqueda());
 
         return view;
@@ -78,6 +83,10 @@ public class ListaFragment extends Fragment implements
             Toast.makeText(requireContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        tvEmpty.setText("Cargando actividades...");
+        tvEmpty.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
 
         RetrofitClient.getApiService().obtenerActividadesOtrosUsuarios(token)
                 .enqueue(new Callback<List<ActividadModel>>() {
@@ -114,13 +123,15 @@ public class ListaFragment extends Fragment implements
         actividad.setPromocionada(model.isPromoted());
         actividad.setPasada(model.isPasada());
         actividad.setAsistido(false);
-        actividad.setImagenRuta(model.getImage());
+        actividad.setImagenRuta(model.getImage()); // Este es el campo clave
         actividad.setIdCreador(model.getUser() != null ? model.getUser().getId() : "desconocido");
+
         if (model.getResponsible() != null && !model.getResponsible().isEmpty()) {
             actividad.setResponsables(String.join(", ", model.getResponsible()));
         } else {
             actividad.setResponsables("Sin responsables");
         }
+
         return actividad;
     }
 
@@ -154,6 +165,10 @@ public class ListaFragment extends Fragment implements
             return;
         }
 
+        tvEmpty.setText("Buscando...");
+        tvEmpty.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
+
         RetrofitClient.getApiService().searchTasks(token, texto)
                 .enqueue(new Callback<List<ActividadModel>>() {
                     @Override
@@ -166,7 +181,7 @@ public class ListaFragment extends Fragment implements
                             for (ActividadModel model : response.body()) {
                                 Actividad act = convertirAPIaActividad(model);
 
-                                // Filtro por texto (si hay texto ingresado)
+                                // Filtro por texto
                                 if (!texto.isEmpty() && !act.getTitulo().toLowerCase().contains(texto.toLowerCase())) {
                                     continue;
                                 }
@@ -175,8 +190,12 @@ public class ListaFragment extends Fragment implements
                                 boolean coincideFecha = true;
                                 try {
                                     Date fechaAct = sdf.parse(act.getFecha());
-                                    if (proximas && (fechaAct == null || !fechaAct.after(hoy))) coincideFecha = false;
-                                    if (pasadas && (fechaAct == null || !fechaAct.before(hoy))) coincideFecha = false;
+                                    if (proximas && fechaAct != null && !fechaAct.after(hoy)) {
+                                        coincideFecha = false;
+                                    }
+                                    if (pasadas && fechaAct != null && !fechaAct.before(hoy)) {
+                                        coincideFecha = false;
+                                    }
                                 } catch (ParseException e) {
                                     coincideFecha = false;
                                 }
@@ -184,7 +203,7 @@ public class ListaFragment extends Fragment implements
                                 // Filtro por promoción
                                 boolean coincidePromocion = !promocionadas || act.isPromocionada();
 
-                                // Agrega si cumple todos
+                                // Agregar si cumple los filtros
                                 if (coincideFecha && coincidePromocion) {
                                     filtradas.add(act);
                                 }
@@ -200,17 +219,16 @@ public class ListaFragment extends Fragment implements
 
                     @Override
                     public void onFailure(@NonNull Call<List<ActividadModel>> call, @NonNull Throwable t) {
-                        Toast.makeText(requireContext(), "Error búsqueda", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Error al buscar", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
-
-
 
     private void actualizarVisibilidad() {
         if (actividadList.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
             tvEmpty.setVisibility(View.VISIBLE);
+            tvEmpty.setText("No hay actividades disponibles");
         } else {
             recyclerView.setVisibility(View.VISIBLE);
             tvEmpty.setVisibility(View.GONE);
@@ -219,16 +237,16 @@ public class ListaFragment extends Fragment implements
 
     @Override
     public void onActividadClick(Actividad actividad) {
-        // No implementado
+        Toast.makeText(requireContext(), "Clic en: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onDetallesClick(Actividad actividad) {
-        // Ahora manejado dentro de ActividadAdapterLista
+        ActividadAdapterLista.mostrarDialogoDetalles(actividad, requireContext());
     }
 
     @Override
     public void onAsistirClick(Actividad actividad, int position) {
-        Toast.makeText(requireContext(), "Asistir a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), "Asistiendo a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
     }
 }

@@ -6,13 +6,11 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.model.ActividadModel;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +68,6 @@ public class PromocionadasAdapter extends RecyclerView.Adapter<PromocionadasAdap
     }
 
     static class PromocionadaViewHolder extends RecyclerView.ViewHolder {
-
         TextView tvTituloActividadPromocionada;
         ImageView ivActividadImagenPromocionada;
         Button btnVerDetallesPromocionada;
@@ -86,8 +83,12 @@ public class PromocionadasAdapter extends RecyclerView.Adapter<PromocionadasAdap
             if (actividadModel != null) {
                 tvTituloActividadPromocionada.setText(actividadModel.getTitle());
 
-                // Ejemplo de carga de imagen con Glide (si usas librería externa)
-                // Glide.with(itemView).load(actividadModel.getImageUrl()).into(ivActividadImagenPromocionada);
+                // Cargar la imagen con Glide
+                Glide.with(itemView)
+                        .load(actividadModel.getImage()) // Devuelve la URL de la imagen
+                        .placeholder(R.drawable.default_image) // Imagen por defecto mientras se carga
+                        .error(R.drawable.default_image) // Imagen si hay error
+                        .into(ivActividadImagenPromocionada);
 
                 btnVerDetallesPromocionada.setOnClickListener(v -> {
                     if (listener != null) {

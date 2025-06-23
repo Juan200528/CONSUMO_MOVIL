@@ -15,6 +15,7 @@ public class Actividad {
     private String imagenRuta;
 
     // --- Getters y Setters ---
+
     public String getId() {
         return id;
     }

@@ -95,6 +95,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     public void cargarActividades() {
         SessionManager sessionManager = new SessionManager(requireContext());
         String token = sessionManager.getToken();
+
         if (token == null || token.isEmpty()) {
             Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
@@ -106,6 +107,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         ApiService api = RetrofitClient.getApiService();
         Call<List<ActividadModel>> call = api.obtenerActividades("Bearer " + token);
+
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
@@ -130,7 +132,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void procesarActividadesDeAPI(List<ActividadModel> actividadesAPI) {
         executorService.execute(() -> {
             List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             Date fechaHoy;
             try {
                 fechaHoy = sdf.parse(sdf.format(new Date()));
@@ -177,6 +179,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
                         getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
+
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
             }
 
@@ -192,6 +195,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEliminar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
+
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -261,7 +265,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         Button btnEditar = dialog.findViewById(R.id.btnEditar);
         Button btnEliminar = dialog.findViewById(R.id.btnEliminar);
         Button btnVolver = dialog.findViewById(R.id.btnVolver);
-        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle); // Nueva ImageView
+        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle); // ImageView para la imagen
 
         tvTituloDetalle.setText(actividad.getTitle());
         tvDescripcionDetalle.setText(actividad.getDescription());
@@ -274,6 +278,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             Glide.with(this)
                     .load(actividad.getImage())
                     .placeholder(R.drawable.default_image)
+                    .error(R.drawable.default_image)
                     .into(ivImagenDetalle);
         } else {
             ivImagenDetalle.setImageResource(R.drawable.default_image);
@@ -312,7 +317,10 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void actualizarVisibilidad() {
         recyclerActividades.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
         tvEmptyActividades.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
-        tvEmptyActividades.setText(itemList.isEmpty() ? "No hay actividades disponibles" : "");
+
+        if (itemList.isEmpty()) {
+            tvEmptyActividades.setText("No hay actividades disponibles");
+        }
     }
 
     @Override

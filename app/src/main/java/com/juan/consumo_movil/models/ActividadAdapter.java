@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
@@ -83,7 +84,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         void onEditarClick(ActividadModel actividadModel);
     }
 
-    // ✅ Interfaz actualizada para recibir ambos parámetros
     public interface OnDetallesClickListener {
         void onDetallesClick(ActividadModel actividadModel, View view);
     }
@@ -124,11 +124,19 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Item item = itemList.get(position);
         if (holder instanceof ActividadViewHolder) {
-            ((ActividadViewHolder) holder).bind(item.getActividadModel(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
+            ((ActividadViewHolder) holder).bind(item.getActividadModel(),
+                    onActividadClickListener,
+                    onDetallesClickListener,
+                    onEditarClickListener,
+                    onEliminarClickListener);
         } else if (holder instanceof TituloViewHolder) {
             ((TituloViewHolder) holder).bind(item.getTitulo());
         } else if (holder instanceof PasadasViewHolder) {
-            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
+            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(),
+                    onActividadClickListener,
+                    onDetallesClickListener,
+                    onEditarClickListener,
+                    onEliminarClickListener);
         }
     }
 
@@ -162,11 +170,33 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnDetallesClickListener onDetallesClickListener,
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener) {
+
+            // Mostrar título
             tvTituloActividad.setText(actividadModel.getTitle());
+
+            // Cargar imagen con Glide
+            String imageUrl = actividadModel.getImage();
+
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                // Si es URL relativa, agregar base URL
+                if (!imageUrl.startsWith("http")) {
+                    imageUrl = "http://localhost:3000" + imageUrl; // Cambia esto por tu dominio real
+                }
+
+                Glide.with(itemView.getContext())
+                        .load(imageUrl)
+                        .placeholder(R.drawable.default_image) // opcional
+                        .error(R.drawable.default_image) // opcional
+                        .into(ivActividadImagen);
+            } else {
+                ivActividadImagen.setImageResource(R.drawable.default_image); // Imagen por defecto
+            }
+
+            // Configurar switch promocionada
             switchPromocion.setChecked(actividadModel.isPromoted());
             switchPromocion.setEnabled(!actividadModel.isPasada());
 
-            // Clic en tarjeta completa
+            // Click en tarjeta completa
             itemView.setOnClickListener(v -> {
                 if (onActividadClickListener != null) {
                     onActividadClickListener.onActividadClick(actividadModel);
@@ -254,6 +284,7 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnDetallesClickListener onDetallesClickListener,
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener) {
+
             List<Item> items = pasadas.stream()
                     .map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null))
                     .collect(Collectors.toList());
@@ -267,7 +298,8 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     onDetallesClickListener
             );
 
-            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));
+            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(),
+                    LinearLayoutManager.HORIZONTAL, false));
             recyclerPasadas.setAdapter(adapter);
         }
     }

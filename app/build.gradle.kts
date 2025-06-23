@@ -46,24 +46,24 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.1")
     implementation("com.google.code.gson:gson:2.8.8")
 
-    // Glide
+    // Glide - Para cargar imágenes desde URL
     implementation("com.github.bumptech.glide:glide:4.12.0")
-    implementation(libs.firebase.storage)
     annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
 
-    // Firebase (BoM ya incluida)
+    // Firebase (usando BoM para manejar compatibilidad)
     implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-storage") // Añadido: para usar Storage
 
     // RecyclerView
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
-    // CircleImageView (opcional para avatares)
+    // CircleImageView (opcional, para perfiles circulares)
     implementation("de.hdodenhof:circleimageview:3.1.0")
 
-    // Testing
+    // Pruebas
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

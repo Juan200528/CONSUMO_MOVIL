@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.utils.SessionManager;
 
@@ -31,7 +32,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
     private List<Actividad> actividadList;
     private String miUsuarioId;
-
     private OnActividadClickListener clickListener;
     private OnDetallesClickListener detallesListener;
     private OnAsistirClickListener asistirListener;
@@ -118,6 +118,8 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         notifyDataSetChanged();
     }
 
+    // ——————————————————————————————— ViewHolder Classes ————————————————————————————————
+
     class MiActividadViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitulo;
         ImageView ivImagen;
@@ -138,22 +140,41 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
         void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
+
+            cargarImagen(ivImagen, actividad.getImagenRuta());
+
             switchPromocion.setChecked(actividad.isPromocionada());
 
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) detallesListener.onDetallesClick(actividad);
+            // Click en item
+            itemView.setOnClickListener(v -> {
+                if (clickListener != null) {
+                    clickListener.onActividadClick(actividad);
+                }
             });
 
+            // Botón Ver Detalles
+            btnVerDetalles.setOnClickListener(v -> {
+                if (detallesListener != null) {
+                    detallesListener.onDetallesClick(actividad);
+                }
+            });
+
+            // Botón Editar
             btnEditar.setOnClickListener(v -> {
                 Toast.makeText(v.getContext(), "Editando: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
             });
 
+            // Botón Eliminar
             btnEliminar.setOnClickListener(v -> {
                 Toast.makeText(v.getContext(), "Eliminar: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
             });
 
+            // Cambio en promoción
             switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                Toast.makeText(buttonView.getContext(), "Cambiar promoción: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(buttonView.getContext(),
+                        isChecked ? "Promocionar: " + actividad.getTitulo()
+                                : "Despromocionar: " + actividad.getTitulo(),
+                        Toast.LENGTH_SHORT).show();
             });
         }
     }
@@ -174,14 +195,19 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
         void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
+            cargarImagen(ivImagen, actividad.getImagenRuta());
 
+            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 mostrarDialogoDetalles(actividad, v.getContext());
                 if (detallesListener != null) detallesListener.onDetallesClick(actividad);
             });
 
+            // Botón Asistir
             btnAsistir.setOnClickListener(v -> {
-                if (asistirListener != null) asistirListener.onAsistirClick(actividad, getAdapterPosition());
+                if (asistirListener != null) {
+                    asistirListener.onAsistirClick(actividad, getAdapterPosition());
+                }
             });
         }
     }
@@ -202,31 +228,60 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
         void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
+            cargarImagen(ivImagen, actividad.getImagenRuta());
 
+            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 mostrarDialogoDetalles(actividad, v.getContext());
                 if (detallesListener != null) detallesListener.onDetallesClick(actividad);
             });
 
+            // Botón Cancelar Asistencia
             btnCancelar.setOnClickListener(v -> {
-                Toast.makeText(v.getContext(), "¿Dejar de asistir a " + actividad.getTitulo() + "?", Toast.LENGTH_SHORT).show();
+                Toast.makeText(v.getContext(), "Dejar de asistir a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
             });
         }
     }
 
-    // Mostrar diálogo de detalles
-    private static void mostrarDialogoDetalles(Actividad actividad, Context context) {
+    // ———————————————————————————————— Métodos auxiliares ————————————————————————————————
+
+    private void cargarImagen(ImageView imageView, String imagePath) {
+        if (imagePath == null || imagePath.isEmpty()) {
+            imageView.setImageResource(R.drawable.default_image);
+            return;
+        }
+
+        if (imagePath.startsWith("http")) {
+            // Es una URL remota
+            Glide.with(imageView.getContext())
+                    .load(imagePath)
+                    .placeholder(R.drawable.default_image)
+                    .error(R.drawable.default_image)
+                    .into(imageView);
+        } else {
+            // Es una ruta local
+            File file = new File(imagePath);
+            if (file.exists()) {
+                imageView.setImageURI(Uri.fromFile(file));
+            } else {
+                imageView.setImageResource(R.drawable.default_image);
+            }
+        }
+    }
+
+    public static void mostrarDialogoDetalles(Actividad actividad, Context context) {
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
-        lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.8f);
+        lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.8f); // 80% ancho
         lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
         dialog.getWindow().setAttributes(lp);
 
         TextView tvDetalleTitulo = dialog.findViewById(R.id.tvTituloDetalle);
-        TextView tvDetalleDescripcion = dialog.findViewById(R.id.tvDescripcionDetalle);
+        TextView tvDescripcion = dialog.findViewById(R.id.tvDescripcionDetalle);
         TextView tvFecha = dialog.findViewById(R.id.tvFechaDetalle);
         TextView tvLugar = dialog.findViewById(R.id.tvLugarDetalle);
         TextView tvResponsables = dialog.findViewById(R.id.tvResponsablesDetalle);
@@ -234,17 +289,27 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         Button btnVolver = dialog.findViewById(R.id.btnVolver);
 
         tvDetalleTitulo.setText(actividad.getTitulo());
-        tvDetalleDescripcion.setText(actividad.getDescripcion());
+        tvDescripcion.setText(actividad.getDescripcion());
         tvFecha.setText(actividad.getFecha());
         tvLugar.setText(actividad.getLugar());
         tvResponsables.setText(actividad.getResponsables());
 
-        if (actividad.getImagenRuta() != null && !actividad.getImagenRuta().isEmpty()) {
-            File imgFile = new File(actividad.getImagenRuta());
-            if (imgFile.exists()) {
-                ivImagenDetalle.setImageURI(Uri.fromFile(imgFile));
+        // Cargar imagen
+        String imagePath = actividad.getImagenRuta();
+        if (imagePath != null && !imagePath.isEmpty()) {
+            if (imagePath.startsWith("http")) {
+                Glide.with(context)
+                        .load(imagePath)
+                        .placeholder(R.drawable.default_image)
+                        .error(R.drawable.default_image)
+                        .into(ivImagenDetalle);
             } else {
-                ivImagenDetalle.setImageResource(R.drawable.default_image);
+                File imgFile = new File(imagePath);
+                if (imgFile.exists()) {
+                    ivImagenDetalle.setImageURI(Uri.fromFile(imgFile));
+                } else {
+                    ivImagenDetalle.setImageResource(R.drawable.default_image);
+                }
             }
         } else {
             ivImagenDetalle.setImageResource(R.drawable.default_image);
