@@ -18,8 +18,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.juan.consumo_movil.api.ApiService;
@@ -27,6 +27,8 @@ import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
 import com.juan.consumo_movil.utils.SessionManager;
+
+import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -37,16 +39,15 @@ public class InicioSesion extends AppCompatActivity {
     private Button btnIniciarSesion;
     private TextView tvRegistrarse, tvOlvidoContrasena;
     private SessionManager sessionManager;
+    private boolean isLoggingIn = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_inicio_sesion);
-
         sessionManager = new SessionManager(this);
         RetrofitClient.init(getApplicationContext());
 
-        // Verificar si ya hay sesión iniciada
         if (sessionManager.isLoggedIn()) {
             redirigirAMenu();
             return;
@@ -56,15 +57,12 @@ public class InicioSesion extends AppCompatActivity {
         etContrasena = findViewById(R.id.etContrasena);
         btnIniciarSesion = findViewById(R.id.btnIniciarSesion);
         tvRegistrarse = findViewById(R.id.tvRegistro);
-        tvOlvidoContrasena = findViewById(R.id.tvOlvidoContrasena); // Nuevo
+        tvOlvidoContrasena = findViewById(R.id.tvOlvidoContrasena);
 
-        // Configurar campo de contraseña: mostrar solo al mantener pulsado
         etContrasena.setTransformationMethod(PasswordTransformationMethod.getInstance());
         setupPasswordToggle(etContrasena);
 
-        // Aplicar efecto visual al botón
         setupLoginButtonWithStateEffect();
-
         btnIniciarSesion.setOnClickListener(v -> iniciarSesion());
 
         String emailRegistrado = getIntent().getStringExtra("email_registrado");
@@ -72,10 +70,8 @@ public class InicioSesion extends AppCompatActivity {
             etCorreo.setText(emailRegistrado);
         }
 
-        // Aplicar estilo y acción al TextView "Regístrate"
         String originalText = "¿No tienes una cuenta? Regístrate";
         SpannableString spannableString = new SpannableString(originalText);
-
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(View widget) {
@@ -84,61 +80,46 @@ public class InicioSesion extends AppCompatActivity {
             }
 
             @Override
-            public void updateDrawState(TextPaint ds) {
+            public void updateDrawState(@NonNull TextPaint ds) {
                 super.updateDrawState(ds);
                 ds.setColor(Color.BLUE);
                 ds.setUnderlineText(false);
             }
         };
-
         int startIndex = originalText.indexOf("Regístrate");
         int endIndex = startIndex + "Regístrate".length();
-
         spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         tvRegistrarse.setText(spannableString);
         tvRegistrarse.setMovementMethod(LinkMovementMethod.getInstance());
         tvRegistrarse.setHighlightColor(Color.TRANSPARENT);
 
-        // Acción para "Olvidé mi contraseña"
         tvOlvidoContrasena.setOnClickListener(v -> {
-            //  Intent intent = new Intent(InicioSesion.this, RecuperarContrasena.class);
-            //  startActivity(intent);
+            // Ir a recuperar contraseña si se implementa
         });
     }
 
     private void setupPasswordToggle(final EditText editText) {
-        // Establecer ícono inicial del ojo apagado
         editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
         editText.setCompoundDrawablePadding(10);
-
         editText.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
-
-            // Calcular posición exacta del icono derecho
             int drawableRightStart = editText.getRight()
                     - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
                     - editText.getCompoundDrawablePadding();
-
             if (event.getAction() == MotionEvent.ACTION_DOWN ||
                     event.getAction() == MotionEvent.ACTION_MOVE) {
-
-                // Si está tocando el ícono del ojo
                 if (event.getRawX() >= drawableRightStart) {
-                    // Mostrar contraseña temporalmente
                     editText.setTransformationMethod(null);
                     editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
                     return true;
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP ||
                     event.getAction() == MotionEvent.ACTION_CANCEL) {
-
-                // Volver a ocultar la contraseña
                 editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
                 editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
                 editText.setSelection(editText.getText().length());
                 return true;
             }
-
             return false;
         });
     }
@@ -161,24 +142,30 @@ public class InicioSesion extends AppCompatActivity {
     }
 
     private void iniciarSesion() {
+        if (isLoggingIn) return;
+        isLoggingIn = true;
+
         String email = etCorreo.getText().toString().trim();
         String password = etContrasena.getText().toString().trim();
 
         if (TextUtils.isEmpty(email)) {
             etCorreo.setError("Ingrese su correo electrónico");
             etCorreo.requestFocus();
+            isLoggingIn = false;
             return;
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etCorreo.setError("Ingrese un correo válido");
             etCorreo.requestFocus();
+            isLoggingIn = false;
             return;
         }
 
         if (TextUtils.isEmpty(password)) {
             etContrasena.setError("Ingrese una contraseña");
             etContrasena.requestFocus();
+            isLoggingIn = false;
             return;
         }
 
@@ -188,9 +175,11 @@ public class InicioSesion extends AppCompatActivity {
 
         ApiService apiService = RetrofitClient.getApiService();
         Call<LoginResponse> call = apiService.login(user);
+
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                isLoggingIn = false;
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
                     String tokenCookie = null;
@@ -207,7 +196,6 @@ public class InicioSesion extends AppCompatActivity {
                     }
 
                     if (tokenCookie == null || tokenCookie.isEmpty()) {
-                        Toast.makeText(InicioSesion.this, "No se recibió token de autenticación", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -219,16 +207,15 @@ public class InicioSesion extends AppCompatActivity {
                             "N/A"
                     );
 
-                    Toast.makeText(InicioSesion.this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show();
                     redirigirAMenu();
                 } else {
-                    Toast.makeText(InicioSesion.this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
+                    // Credenciales incorrectas
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
-                Toast.makeText(InicioSesion.this, "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                isLoggingIn = false;
             }
         });
     }

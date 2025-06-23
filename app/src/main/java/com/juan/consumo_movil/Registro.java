@@ -6,8 +6,6 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -19,9 +17,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.TextViewCompat;
 
@@ -31,6 +30,9 @@ import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
 import com.juan.consumo_movil.utils.SessionManager;
 
+import java.util.List;
+import java.util.Objects;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -39,13 +41,12 @@ public class Registro extends AppCompatActivity {
     private EditText fullNameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private Button btnRegistrar;
     private SessionManager sessionManager;
+    private boolean isRegistering = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_registro);
-
-        // Inicializar RetrofitClient con contexto para que apiService no sea null
         RetrofitClient.init(getApplicationContext());
 
         fullNameEditText = findViewById(R.id.fullNameEditText);
@@ -55,7 +56,6 @@ public class Registro extends AppCompatActivity {
         btnRegistrar = findViewById(R.id.btnRegistrar);
         sessionManager = new SessionManager(this);
 
-        // TextView "¿Ya tienes cuenta? Entrar"
         TextView loginLinkTextView = findViewById(R.id.loginLinkTextView);
         String originalText = "¿Ya tienes cuenta? Entrar";
         SpannableString spannableString = new SpannableString(originalText);
@@ -67,65 +67,49 @@ public class Registro extends AppCompatActivity {
             }
 
             @Override
-            public void updateDrawState(TextPaint ds) {
+            public void updateDrawState(@NonNull TextPaint ds) {
                 super.updateDrawState(ds);
-                ds.setColor(Color.BLUE); // Color azul para "Entrar"
-                ds.setUnderlineText(false); // Sin subrayado
+                ds.setColor(Color.BLUE);
+                ds.setUnderlineText(false);
             }
         };
-
         int startIndex = originalText.indexOf("Entrar");
         int endIndex = startIndex + "Entrar".length();
         spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         loginLinkTextView.setText(spannableString);
         loginLinkTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
-        loginLinkTextView.setHighlightColor(Color.TRANSPARENT); // Sin resaltado al hacer clic
+        loginLinkTextView.setHighlightColor(Color.TRANSPARENT);
 
-        // Configurar campos de contraseña para mostrar SOLO AL MANTENER PRESIONADO
         setupPasswordField(passwordEditText);
         setupPasswordField(confirmPasswordEditText);
 
-        // Aplicar efecto visual al botón
         setupRegisterButtonWithStateEffect();
-
         btnRegistrar.setOnClickListener(v -> registrarUsuario());
     }
 
     private void setupPasswordField(EditText editText) {
-        // Ocultar contraseña por defecto
         editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-        // Establecer ícono del ojo cerrado
         editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
         editText.setCompoundDrawablePadding(10);
-
         editText.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
-
-            // Calcular posición exacta del icono derecho
             int drawableRightStart = editText.getRight()
                     - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
                     - editText.getCompoundDrawablePadding();
-
             if (event.getAction() == MotionEvent.ACTION_DOWN ||
                     event.getAction() == MotionEvent.ACTION_MOVE) {
-
-                // Si está tocando el ícono del ojo
                 if (event.getRawX() >= drawableRightStart) {
-                    // Mostrar contraseña temporalmente
                     editText.setTransformationMethod(null);
                     editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
                     return true;
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP ||
                     event.getAction() == MotionEvent.ACTION_CANCEL) {
-
-                // Volver a ocultar la contraseña
                 editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
                 editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
                 editText.setSelection(editText.getText().length());
                 return true;
             }
-
             return false;
         });
     }
@@ -137,8 +121,8 @@ public class Registro extends AppCompatActivity {
         gradientDrawableNormal.setCornerRadius(80f);
 
         GradientDrawable gradientDrawablePressed = new GradientDrawable();
-        gradientDrawablePressed.setColor(Color.parseColor("#063449")); // Color al presionar
-        gradientDrawablePressed.setCornerRadius(80f); // Mismo radio
+        gradientDrawablePressed.setColor(Color.parseColor("#063449"));
+        gradientDrawablePressed.setCornerRadius(80f);
 
         StateListDrawable stateListDrawable = new StateListDrawable();
         stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, gradientDrawablePressed);
@@ -148,40 +132,53 @@ public class Registro extends AppCompatActivity {
     }
 
     private void registrarUsuario() {
+        if (isRegistering) return;
+        isRegistering = true;
+
         String nombreCompleto = fullNameEditText.getText().toString().trim();
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
         String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
-        // Validaciones
         if (TextUtils.isEmpty(nombreCompleto)) {
             fullNameEditText.setError("Ingrese su nombre completo");
             fullNameEditText.requestFocus();
+            isRegistering = false;
             return;
         }
+
         if (TextUtils.isEmpty(email)) {
             emailEditText.setError("Ingrese su correo electrónico");
             emailEditText.requestFocus();
+            isRegistering = false;
             return;
         }
+
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailEditText.setError("Ingrese un correo válido");
             emailEditText.requestFocus();
+            isRegistering = false;
             return;
         }
+
         if (TextUtils.isEmpty(password)) {
             passwordEditText.setError("Ingrese una contraseña");
             passwordEditText.requestFocus();
+            isRegistering = false;
             return;
         }
+
         if (password.length() < 6) {
             passwordEditText.setError("La contraseña debe tener al menos 6 caracteres");
             passwordEditText.requestFocus();
+            isRegistering = false;
             return;
         }
+
         if (!password.equals(confirmPassword)) {
             confirmPasswordEditText.setError("Las contraseñas no coinciden");
             confirmPasswordEditText.requestFocus();
+            isRegistering = false;
             return;
         }
 
@@ -192,14 +189,15 @@ public class Registro extends AppCompatActivity {
 
         ApiService apiService = RetrofitClient.getApiService();
         Call<LoginResponse> call = apiService.register(user);
+
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                isRegistering = false;
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
-
-                    // Extraer token de la cookie
                     String tokenCookie = null;
+
                     for (int i = 0; i < response.headers().size(); i++) {
                         String name = response.headers().name(i);
                         String value = response.headers().value(i);
@@ -211,37 +209,27 @@ public class Registro extends AppCompatActivity {
                         }
                     }
 
-                    if (tokenCookie != null) {
-                        sessionManager.guardarToken(tokenCookie);
-                    } else {
-                        Toast.makeText(Registro.this, "No se recibió token de autenticación", Toast.LENGTH_SHORT).show();
+                    if (tokenCookie == null || tokenCookie.isEmpty()) {
                         return;
                     }
 
+                    sessionManager.guardarToken(tokenCookie);
                     sessionManager.guardarSesion(
-                            String.valueOf(loginResponse.getId()),
+                            Objects.requireNonNull(loginResponse.getId()).toString(),
                             loginResponse.getUsername(),
                             loginResponse.getEmail(),
                             "N/A"
                     );
 
-                    Toast.makeText(Registro.this, "Registro exitoso", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(Registro.this, MenuActivity.class);
                     startActivity(intent);
                     finish();
-                } else {
-                    try {
-                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Error desconocido";
-                        Toast.makeText(Registro.this, "Error en el registro: " + errorBody, Toast.LENGTH_SHORT).show();
-                    } catch (Exception e) {
-                        Toast.makeText(Registro.this, "Error en el registro", Toast.LENGTH_SHORT).show();
-                    }
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
-                Toast.makeText(Registro.this, "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                isRegistering = false;
             }
         });
     }

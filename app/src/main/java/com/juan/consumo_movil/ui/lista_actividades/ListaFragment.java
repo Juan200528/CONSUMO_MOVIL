@@ -56,22 +56,18 @@ public class ListaFragment extends Fragment implements
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_lista, container, false);
 
-        // Inicializar vistas
         recyclerView = view.findViewById(R.id.recyclerLista);
         btnBuscar = view.findViewById(R.id.btnBuscarLupa);
         tvEmpty = view.findViewById(R.id.tvEmptyLista);
         sessionManager = new SessionManager(requireContext());
         miUsuarioId = sessionManager.getUserId();
 
-        // Configurar RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new ActividadAdapterLista(actividadList, this, this, this, sessionManager);
         recyclerView.setAdapter(adapter);
 
-        // Cargar datos iniciales
         cargarActividadesIniciales();
 
-        // Botón de búsqueda
         btnBuscar.setOnClickListener(v -> mostrarDialogoBusqueda());
 
         return view;
@@ -79,10 +75,7 @@ public class ListaFragment extends Fragment implements
 
     private void cargarActividadesIniciales() {
         String token = sessionManager.fetchAuthToken();
-        if (token == null || token.isEmpty()) {
-            Toast.makeText(requireContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (token == null || token.isEmpty()) return;
 
         tvEmpty.setText("Cargando actividades...");
         tvEmpty.setVisibility(View.VISIBLE);
@@ -95,44 +88,41 @@ public class ListaFragment extends Fragment implements
                         if (response.isSuccessful() && response.body() != null) {
                             listaOriginal.clear();
                             for (ActividadModel model : response.body()) {
-                                Actividad act = convertirAPIaActividad(model);
-                                listaOriginal.add(act);
+                                listaOriginal.add(convertirAPIaActividad(model));
                             }
-                            actividadList = new ArrayList<>(listaOriginal);
-                            adapter.updateItems(actividadList);
-                            actualizarVisibilidad();
+                            aplicarFiltros("", false, false, false);
                         } else {
-                            Toast.makeText(requireContext(), "Error cargando actividades ajenas", Toast.LENGTH_SHORT).show();
+                            actualizarVisibilidad();
                         }
                     }
 
                     @Override
                     public void onFailure(@NonNull Call<List<ActividadModel>> call, @NonNull Throwable t) {
-                        Toast.makeText(requireContext(), "Error de red", Toast.LENGTH_SHORT).show();
+                        actualizarVisibilidad();
                     }
                 });
     }
 
     private Actividad convertirAPIaActividad(ActividadModel model) {
-        Actividad actividad = new Actividad();
-        actividad.setId(model.getId());
-        actividad.setTitulo(model.getTitle());
-        actividad.setDescripcion(model.getDescription());
-        actividad.setLugar(model.getPlace());
-        actividad.setFecha(model.getDate());
-        actividad.setPromocionada(model.isPromoted());
-        actividad.setPasada(model.isPasada());
-        actividad.setAsistido(false);
-        actividad.setImagenRuta(model.getImage()); // Este es el campo clave
-        actividad.setIdCreador(model.getUser() != null ? model.getUser().getId() : "desconocido");
+        Actividad act = new Actividad();
+        act.setId(model.getId());
+        act.setTitulo(model.getTitle());
+        act.setDescripcion(model.getDescription());
+        act.setLugar(model.getPlace());
+        act.setFecha(model.getDate());
+        act.setPromocionada(model.isPromoted());
+        act.setPasada(model.isPasada());
+        act.setAsistido(false);
+        act.setImagenRuta(model.getImage());
+        act.setIdCreador(model.getUser() != null ? model.getUser().getId() : "desconocido");
 
         if (model.getResponsible() != null && !model.getResponsible().isEmpty()) {
-            actividad.setResponsables(String.join(", ", model.getResponsible()));
+            act.setResponsables(String.join(", ", model.getResponsible()));
         } else {
-            actividad.setResponsables("Sin responsables");
+            act.setResponsables("Sin responsables");
         }
 
-        return actividad;
+        return act;
     }
 
     private void mostrarDialogoBusqueda() {
@@ -147,11 +137,11 @@ public class ListaFragment extends Fragment implements
 
         btnBuscar.setOnClickListener(v -> {
             String filtroTexto = etBuscar.getText().toString().trim();
-            boolean filtrarProximas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaProximas;
-            boolean filtrarPasadas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaPasadas;
-            boolean filtrarPromocionadas = rgEstado.getCheckedRadioButtonId() == R.id.rbEstadoPromocionadas;
+            boolean proximas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaProximas;
+            boolean pasadas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaPasadas;
+            boolean promocionadas = rgEstado.getCheckedRadioButtonId() == R.id.rbEstadoPromocionadas;
 
-            aplicarFiltros(filtroTexto, filtrarProximas, filtrarPasadas, filtrarPromocionadas);
+            aplicarFiltros(filtroTexto, proximas, pasadas, promocionadas);
             dialog.dismiss();
         });
 
@@ -160,10 +150,7 @@ public class ListaFragment extends Fragment implements
 
     private void aplicarFiltros(String texto, boolean proximas, boolean pasadas, boolean promocionadas) {
         String token = sessionManager.fetchAuthToken();
-        if (token == null || token.isEmpty()) {
-            Toast.makeText(requireContext(), "Token no disponible", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (token == null || token.isEmpty()) return;
 
         tvEmpty.setText("Buscando...");
         tvEmpty.setVisibility(View.VISIBLE);
@@ -181,30 +168,17 @@ public class ListaFragment extends Fragment implements
                             for (ActividadModel model : response.body()) {
                                 Actividad act = convertirAPIaActividad(model);
 
-                                // Filtro por texto
-                                if (!texto.isEmpty() && !act.getTitulo().toLowerCase().contains(texto.toLowerCase())) {
-                                    continue;
-                                }
+                                if (!texto.isEmpty() && !act.getTitulo().toLowerCase().contains(texto.toLowerCase())) continue;
 
-                                // Filtro por fecha
-                                boolean coincideFecha = true;
                                 try {
                                     Date fechaAct = sdf.parse(act.getFecha());
-                                    if (proximas && fechaAct != null && !fechaAct.after(hoy)) {
-                                        coincideFecha = false;
-                                    }
-                                    if (pasadas && fechaAct != null && !fechaAct.before(hoy)) {
-                                        coincideFecha = false;
-                                    }
-                                } catch (ParseException e) {
-                                    coincideFecha = false;
-                                }
+                                    if (proximas && fechaAct != null && !fechaAct.after(hoy)) continue;
+                                    if (pasadas && fechaAct != null && !fechaAct.before(hoy)) continue;
+                                } catch (ParseException e) {}
 
-                                // Filtro por promoción
                                 boolean coincidePromocion = !promocionadas || act.isPromocionada();
 
-                                // Agregar si cumple los filtros
-                                if (coincideFecha && coincidePromocion) {
+                                if (coincidePromocion) {
                                     filtradas.add(act);
                                 }
                             }
@@ -213,25 +187,26 @@ public class ListaFragment extends Fragment implements
                             adapter.updateItems(filtradas);
                             actualizarVisibilidad();
                         } else {
-                            Toast.makeText(requireContext(), "No se encontraron actividades", Toast.LENGTH_SHORT).show();
+                            actividadList.clear();
+                            adapter.updateItems(new ArrayList<>());
+                            actualizarVisibilidad();
                         }
                     }
 
                     @Override
                     public void onFailure(@NonNull Call<List<ActividadModel>> call, @NonNull Throwable t) {
-                        Toast.makeText(requireContext(), "Error al buscar", Toast.LENGTH_SHORT).show();
+                        actividadList.clear();
+                        adapter.updateItems(new ArrayList<>());
+                        actualizarVisibilidad();
                     }
                 });
     }
 
     private void actualizarVisibilidad() {
+        recyclerView.setVisibility(actividadList.isEmpty() ? View.GONE : View.VISIBLE);
+        tvEmpty.setVisibility(actividadList.isEmpty() ? View.VISIBLE : View.GONE);
         if (actividadList.isEmpty()) {
-            recyclerView.setVisibility(View.GONE);
-            tvEmpty.setVisibility(View.VISIBLE);
             tvEmpty.setText("No hay actividades disponibles");
-        } else {
-            recyclerView.setVisibility(View.VISIBLE);
-            tvEmpty.setVisibility(View.GONE);
         }
     }
 

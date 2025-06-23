@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Permisos requeridos -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/> <!-- Solo para dispositivos anteriores a Android 9 -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/> <!-- Solo para dispositivos anteriores a Android 9 -->
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:hardwareAccelerated="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -18,35 +20,70 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Movil_PANAS_Coop"
-        tools:targetApi="31">
+        android:clearTaskOnLaunch="true"
+        android:directBootAware="false">
+
+        <!-- Actividades internas -->
         <activity
             android:name=".ui.chat.ChatActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:noHistory="false"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="true" />
+
         <activity
             android:name=".CrearActividad"
-            android:exported="false" />
+            android:exported="false"
+            android:noHistory="false"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="true" />
+
         <activity
             android:name=".MenuActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustPan" /> <!-- Aquí está la clave -->
+            android:windowSoftInputMode="adjustPan"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="true" />
+
         <activity
             android:name=".Registro"
-            android:exported="false" />
+            android:exported="false"
+            android:noHistory="true"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="true" />
+
         <activity
             android:name=".InicioSesion"
-            android:exported="false" />
+            android:exported="false"
+            android:noHistory="true"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="true" />
+
         <activity
             android:name=".MainActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="true" />
+
+        <!-- Actividad principal -->
         <activity
             android:name=".PantallaPrincipal"
-            android:exported="true">
+            android:launchMode="singleTask"
+            android:exported="true"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+    </application>
 </manifest>

@@ -32,10 +32,8 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -48,7 +46,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class CrearActividad extends AppCompatActivity {
-
     private static final int PICK_IMAGE = 1;
     private static final int PERM_REQ = 100;
 
@@ -82,19 +79,11 @@ public class CrearActividad extends AppCompatActivity {
         findViewById(R.id.btnCrear).setOnClickListener(v -> upload());
     }
 
-    private void showToastAndLog(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-        Log.e("CrearActividad", message);
-    }
-
     private void showDatePicker() {
         Calendar c = Calendar.getInstance();
-        new DatePickerDialog(this, new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                etFecha.setText(String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth));
-            }
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+        new DatePickerDialog(this, (view, year, month, dayOfMonth) ->
+                etFecha.setText(String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)),
+                c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private boolean storagePerm() {
@@ -124,9 +113,6 @@ public class CrearActividad extends AppCompatActivity {
             Uri uri = data.getData();
             ivImg.setImageURI(uri);
             imgFile = uriToFile(uri);
-            if (imgFile == null) {
-                showToastAndLog("No se pudo procesar la imagen seleccionada");
-            }
         }
     }
 
@@ -137,8 +123,6 @@ public class CrearActividad extends AppCompatActivity {
         if (requestCode == PERM_REQ && grantResults.length > 0 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             pickImage();
-        } else {
-            showToastAndLog("Permiso para acceder a imágenes denegado");
         }
     }
 
@@ -155,7 +139,6 @@ public class CrearActividad extends AppCompatActivity {
             }
             return tmp;
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }
@@ -168,11 +151,10 @@ public class CrearActividad extends AppCompatActivity {
         String responsablesStr = etResp.getText().toString().trim();
 
         if (TextUtils.isEmpty(titulo) || TextUtils.isEmpty(fecha) || TextUtils.isEmpty(lugar)) {
-            showToastAndLog("Título, fecha y lugar son obligatorios");
+            Toast.makeText(this, "Título, fecha y lugar son obligatorios", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Validación de fecha
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         try {
             Date inputDate = sdf.parse(fecha);
@@ -182,38 +164,32 @@ public class CrearActividad extends AppCompatActivity {
             today.set(Calendar.SECOND, 0);
             today.set(Calendar.MILLISECOND, 0);
             if (inputDate.before(today.getTime())) {
-                showToastAndLog("No puedes seleccionar una fecha anterior a hoy");
+                Toast.makeText(this, "No puedes seleccionar una fecha anterior a hoy", Toast.LENGTH_SHORT).show();
                 return;
             }
         } catch (ParseException e) {
-            showToastAndLog("Formato de fecha inválido");
+            Toast.makeText(this, "Formato de fecha inválido", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String token = sessionManager.getToken();
         if (token == null || token.isEmpty()) {
-            showToastAndLog("Token de autenticación faltante. Por favor inicia sesión.");
+            Toast.makeText(this, "Inicie sesión nuevamente.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Convertir campos normales a RequestBody
         RequestBody titleBody = createRequestBody(titulo);
         RequestBody descBody = createRequestBody(descripcion);
         RequestBody dateBody = createRequestBody(formatDateForBackend(fecha));
         RequestBody placeBody = createRequestBody(lugar);
-        RequestBody responsableBody = null;
-        if (!responsablesStr.isEmpty()) {
-            responsableBody = createRequestBody(responsablesStr);
-        }
+        RequestBody responsableBody = !TextUtils.isEmpty(responsablesStr) ? createRequestBody(responsablesStr) : null;
 
-        // Preparar imagen
         MultipartBody.Part imagePart = null;
         if (imgFile != null && imgFile.exists()) {
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), imgFile);
             imagePart = MultipartBody.Part.createFormData("image", imgFile.getName(), requestFile);
         }
 
-        // Llamada API
         Call<ActividadModel> call = api.crearActividadConImagen(
                 "Bearer " + token,
                 titleBody,
@@ -229,21 +205,14 @@ public class CrearActividad extends AppCompatActivity {
             public void onResponse(Call<ActividadModel> call, Response<ActividadModel> response) {
                 cleanupTempFile();
                 if (response.isSuccessful()) {
-                    ActividadModel actividad = response.body();
-                    if (actividad != null && actividad.getImage() != null) {
-                        Log.d("CrearActividad", "URL de imagen: " + actividad.getImage());
-                    }
-                    showToastAndLog("Actividad creada exitosamente");
                     finish();
-                } else {
-                    handleErrorResponse(response);
+                    Toast.makeText(CrearActividad.this, "Actividad creada exitosamente", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<ActividadModel> call, Throwable t) {
                 cleanupTempFile();
-                showToastAndLog("Error de conexión: " + t.getMessage());
             }
         });
     }
@@ -268,33 +237,8 @@ public class CrearActividad extends AppCompatActivity {
         if (imgFile != null && imgFile.exists()) {
             boolean deleted = imgFile.delete();
             if (!deleted) {
-                Log.w("CrearActividad", "No se pudo eliminar archivo temporal: " + imgFile.getAbsolutePath());
+                Log.w("CrearActividad", "No se pudo eliminar archivo temporal");
             }
-        }
-    }
-
-    private void handleErrorResponse(Response<?> response) {
-        try {
-            if (response.errorBody() != null) {
-                String errorBody = response.errorBody().string();
-                switch (response.code()) {
-                    case 400:
-                        showToastAndLog("Datos inválidos. Revisa los campos.");
-                        break;
-                    case 401:
-                        showToastAndLog("No autorizado. Inicia sesión nuevamente.");
-                        break;
-                    case 500:
-                        showToastAndLog("Error del servidor. Intenta más tarde.");
-                        break;
-                    default:
-                        showToastAndLog("Error: " + errorBody);
-                }
-            } else {
-                showToastAndLog("Error desconocido del servidor");
-            }
-        } catch (Exception e) {
-            showToastAndLog("Error procesando respuesta del servidor");
         }
     }
 }

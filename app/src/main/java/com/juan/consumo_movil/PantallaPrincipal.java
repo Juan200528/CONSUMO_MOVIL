@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -13,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 public class PantallaPrincipal extends AppCompatActivity {
 
@@ -26,16 +24,8 @@ public class PantallaPrincipal extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pantalla_principal);
 
-        // Autenticación anónima con Firebase
-        FirebaseAuth.getInstance().signInAnonymously()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-                        Log.d("FirebaseAuth", "Usuario anónimo autenticado: " + user.getUid());
-                    } else {
-                        Log.e("FirebaseAuth", "Error al iniciar sesión anónima", task.getException());
-                    }
-                });
+        // Iniciar sesión anónima en Firebase (sin mostrar logs)
+        FirebaseAuth.getInstance().signInAnonymously();
 
         // Título
         PanasCoop = findViewById(R.id.PanasCoop);

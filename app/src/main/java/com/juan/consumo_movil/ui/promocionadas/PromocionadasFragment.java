@@ -9,18 +9,22 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.ui.promocionadas.PromocionadasAdapter;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -70,8 +74,7 @@ public class PromocionadasFragment extends Fragment {
 
             @Override
             public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
-                t.printStackTrace();
-                // Aquí puedes mostrar un mensaje de error si lo deseas
+                // No mostramos error de red ni mensajes técnicos
             }
         });
     }
@@ -107,7 +110,12 @@ public class PromocionadasFragment extends Fragment {
         tvDescripcionDetalle.setText(actividad.getDescription());
         tvFechaDetalle.setText(actividad.getDate());
         tvLugarDetalle.setText(actividad.getPlace());
-        tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
+
+        if (actividad.getResponsible() != null && !actividad.getResponsible().isEmpty()) {
+            tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
+        } else {
+            tvResponsablesDetalle.setText("Sin responsables");
+        }
 
         // Botón para cerrar el diálogo
         btnVolver.setOnClickListener(v -> dialog.dismiss());

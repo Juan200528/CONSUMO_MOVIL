@@ -1,32 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@drawable/bg_comunidad_card"
-    android:elevation="4dp"
-    android:layout_margin="8dp">
+    android:layout_margin="12dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="#F9F9F9"
+    app:contentPadding="16dp">
 
-    <TextView
-        android:id="@+id/textNombreComunidad"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Nombre comunidad"
-        android:textStyle="bold"
-        android:textSize="20sp"
-        android:textColor="#333333"
-        android:paddingBottom="8dp" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <Button
-        android:id="@+id/btnUnirseOEntrar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Unirse o Entrar"
-        android:textAllCaps="false"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#4CAF50"
-        android:paddingVertical="10dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp" />
-</LinearLayout>
+        <!-- Icono + Nombre de la comunidad -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <!-- Icono de comunidad -->
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_comunidades"
+                android:tint="#3498DB"
+                android:layout_marginEnd="12dp"/>
+
+            <!-- Nombre de la comunidad -->
+            <TextView
+                android:id="@+id/textNombreComunidad"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nombre de la Comunidad"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#2C3E50"
+                android:fontFamily="sans-serif-medium"/>
+        </LinearLayout>
+
+        <!-- Botón para unirse o entrar -->
+        <Button
+            android:id="@+id/btnUnirseOEntrar"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Unirse o Entrar"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="@color/primaryColor"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:paddingHorizontal="16dp"
+            android:elevation="4dp"
+            android:stateListAnimator="@null"
+            android:fontFamily="sans-serif-medium"
+            android:clickable="true"
+            android:focusable="true"
+            android:backgroundTintMode="@color/primaryColor"/> <!-- ✅ Color desde colors.xml -->
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
