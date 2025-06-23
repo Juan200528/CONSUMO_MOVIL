@@ -1,5 +1,38 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp">
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Actividades Promocionadas" android:textSize="26sp" android:textStyle="bold" android:layout_marginBottom="24dp" android:layout_gravity="center"/>
-    <TextView android:id="@+id/tvEmptyPromocionadas" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="No hay actividades promocionadas" android:textAlignment="center" android:textSize="16sp" android:visibility="gone"/>
-    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerPromocionadas" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Título -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Actividades Promocionadas"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"
+        android:layout_gravity="center"/>
+
+    <!-- Mensaje vacío -->
+    <TextView
+        android:id="@+id/tvEmptyPromocionadas"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No hay actividades promocionadas"
+        android:textAlignment="center"
+        android:textSize="16sp"
+        android:visibility="gone"/>
+
+    <!-- RecyclerView principal -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerPromocionadas"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingBottom="72dp"
+        android:clipToPadding="false"
+        android:clipChildren="false"/>
+
 </LinearLayout>
