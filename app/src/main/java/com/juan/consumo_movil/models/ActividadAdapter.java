@@ -1,32 +1,30 @@
 package com.juan.consumo_movil.models;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
+import com.juan.consumo_movil.api.ApiService;
+import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
-import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
-
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
-import retrofit2.http.HEAD;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -121,21 +119,12 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Item item = itemList.get(position);
-
         if (holder instanceof ActividadViewHolder) {
-            ((ActividadViewHolder) holder).bind(item.getActividadModel(),
-                    onActividadClickListener,
-                    onDetallesClickListener,
-                    onEditarClickListener,
-                    onEliminarClickListener);
+            ((ActividadViewHolder) holder).bind(item.getActividadModel(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
         } else if (holder instanceof TituloViewHolder) {
             ((TituloViewHolder) holder).bind(item.getTitulo());
         } else if (holder instanceof PasadasViewHolder) {
-            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(),
-                    onActividadClickListener,
-                    onDetallesClickListener,
-                    onEditarClickListener,
-                    onEliminarClickListener);
+            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
         }
     }
 
@@ -155,8 +144,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         ImageView ivActividadImagen;
         TextView btnVerDetalles;
         Switch switchPromocion;
-        TextView tvAgregarAsistentes;
-        ImageButton btnPlus;
 
         public ActividadViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -164,8 +151,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             ivActividadImagen = itemView.findViewById(R.id.ivActividadImagen);
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             switchPromocion = itemView.findViewById(R.id.switchPromocion);
-            tvAgregarAsistentes = itemView.findViewById(R.id.tvAgregarAsistentes);
-            btnPlus = itemView.findViewById(R.id.btnPlus);
         }
 
         public void bind(ActividadModel actividadModel,
@@ -174,53 +159,63 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener) {
 
-            // Mostrar título
+            // Título
             tvTituloActividad.setText(actividadModel.getTitle());
 
-            // Cargar imagen con Glide
+            // Imagen
             String imageUrl = actividadModel.getImage();
-
             if (imageUrl != null && !imageUrl.isEmpty()) {
-                // Si es URL relativa, agregar base URL
                 if (!imageUrl.startsWith("http")) {
-                    imageUrl = "http://localhost:3000" + imageUrl; // Cambia esto por tu dominio real
+                    imageUrl = "http://localhost:3000" + imageUrl; // Cambiar por tu dominio real
                 }
-
                 Glide.with(itemView.getContext())
                         .load(imageUrl)
-                        .placeholder(R.drawable.default_image) // opcional
-                        .error(R.drawable.default_image) // opcional
+                        .placeholder(R.drawable.default_image)
+                        .error(R.drawable.default_image)
                         .into(ivActividadImagen);
             } else {
-                ivActividadImagen.setImageResource(R.drawable.default_image); // Imagen por defecto
+                ivActividadImagen.setImageResource(R.drawable.default_image);
             }
 
-            // Configurar switch promocionada
+            // Switch Promocionar
             switchPromocion.setChecked(actividadModel.isPromoted());
+            switchPromocion.setEnabled(!actividadModel.isPasada());
 
-            // Listener compartido para navegar a GestionarFragment
-            View.OnClickListener navigateListener = v -> {
-                Bundle args = new Bundle();
-                args.putString("activity_id", actividadModel.getId());
-                args.putString("activity_title", actividadModel.getTitle());
+            // Acción del Switch para promocionar/despromocionar
+            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (!actividadModel.isPasada()) {
+                    String id = actividadModel.getId();
+                    if (id == null || id.isEmpty() || id.equals("0")) {
+                        Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-                Fragment gestionarFragment = new GestionarFragment();
-                gestionarFragment.setArguments(args);
+                    String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
+                    String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+                            .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
 
-                if (itemView.getContext() instanceof FragmentActivity) {
-                    FragmentActivity activity = (FragmentActivity) itemView.getContext();
-                    activity.getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, gestionarFragment)
-                            .addToBackStack(null)
-                            .commit();
+                    PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
+
+                    ApiService apiService = RetrofitClient.getApiService();
+                    apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(buttonView.getContext(), "Promoción actualizada", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(buttonView.getContext(), "Error al actualizar", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<ResponseBody> call, Throwable t) {
+                            Toast.makeText(buttonView.getContext(), "Fallo de red", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }
-            };
+            });
 
-            tvAgregarAsistentes.setOnClickListener(navigateListener);
-            btnPlus.setOnClickListener(navigateListener);
-
-            // Click en tarjeta completa
+            // Click en tarjeta
             itemView.setOnClickListener(v -> {
                 if (onActividadClickListener != null) {
                     onActividadClickListener.onActividadClick(actividadModel);
@@ -290,12 +285,7 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     onDetallesClickListener
             );
 
-
-            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(),
-                    LinearLayoutManager.HORIZONTAL, false));
-
-            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext()));
-
+            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));
             recyclerPasadas.setAdapter(adapter);
         }
     }

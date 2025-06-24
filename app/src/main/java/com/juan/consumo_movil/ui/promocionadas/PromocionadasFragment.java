@@ -2,6 +2,8 @@ package com.juan.consumo_movil.ui.promocionadas;
 
 import android.app.Dialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,11 +38,14 @@ public class PromocionadasFragment extends Fragment {
     private RecyclerView recyclerView;
     private PromocionadasAdapter adapter;
 
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable refreshRunnable;
+    private static final long REFRESH_INTERVAL = 60000; // 60 segundos
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // Inflar el layout del fragmento
         View view = inflater.inflate(R.layout.fragment_promocionadas, container, false);
 
         // Inicializar RecyclerView
@@ -52,10 +57,33 @@ public class PromocionadasFragment extends Fragment {
         adapter = new PromocionadasAdapter(new ArrayList<>(), this::mostrarDialogoDetalles);
         recyclerView.setAdapter(adapter);
 
-        // Cargar datos desde la API
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Cargar datos iniciales
         cargarActividadesPromocionadas();
 
-        return view;
+        // Programar recarga periódica
+        refreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                cargarActividadesPromocionadas();
+                handler.postDelayed(this, REFRESH_INTERVAL); // Volver a programar
+            }
+        };
+
+        handler.postDelayed(refreshRunnable, REFRESH_INTERVAL);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Detener actualizaciones automáticas al destruir la vista
+        handler.removeCallbacks(refreshRunnable);
     }
 
     /**

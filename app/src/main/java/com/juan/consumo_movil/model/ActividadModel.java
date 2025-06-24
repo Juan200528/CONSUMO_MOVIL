@@ -1,7 +1,6 @@
 package com.juan.consumo_movil.model;
 
 import com.google.gson.annotations.SerializedName;
-
 import java.util.List;
 
 public class ActividadModel {
@@ -39,7 +38,6 @@ public class ActividadModel {
     @SerializedName("user")
     private User user;
 
-    // --- Clase interna User ---
     public static class User {
         @SerializedName("_id")
         private String id;
@@ -107,7 +105,7 @@ public class ActividadModel {
         return promocionada;
     }
 
-    public void setPromocionada(boolean promocionada) {
+    public void setPromoted(boolean promocionada) {
         this.promocionada = promocionada;
     }
 
@@ -127,7 +125,6 @@ public class ActividadModel {
         this.pasada = pasada;
     }
 
-
     public String getImage() {
         return imageUrl;
     }
@@ -144,4 +141,19 @@ public class ActividadModel {
         this.user = user;
     }
 
+    // ✅ Métodos nuevos para comparar objetos
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ActividadModel)) return false;
+
+        ActividadModel that = (ActividadModel) o;
+
+        return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return getId() != null ? getId().hashCode() : 0;
+    }
 }

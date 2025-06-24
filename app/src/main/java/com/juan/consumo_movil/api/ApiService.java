@@ -10,6 +10,7 @@ import java.util.List;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
@@ -49,7 +50,7 @@ public interface ApiService {
     @GET("api/tasks")
     Call<List<ActividadModel>> obtenerActividades(@Header("Authorization") String token);
 
-    // ➕ Crear nueva actividad
+    // ➕ Crear nueva actividad con imagen
     @Multipart
     @POST("api/tasks")
     Call<ActividadModel> crearActividadConImagen(
@@ -58,7 +59,7 @@ public interface ApiService {
             @Part("description") RequestBody description,
             @Part("date") RequestBody date,
             @Part("place") RequestBody place,
-            @Part("responsible") RequestBody responsible, // opcional
+            @Part("responsible") RequestBody responsible,
             @Part MultipartBody.Part image
     );
 
@@ -66,13 +67,12 @@ public interface ApiService {
     @GET("api/tasks/others")
     Call<List<ActividadModel>> obtenerActividadesOtrosUsuarios(@Header("Authorization") String token);
 
-
+    // 🔍 Buscar actividades por texto
     @GET("api/tasks/search")
     Call<List<ActividadModel>> searchTasks(
             @Header("Authorization") String token,
             @Query("texto") String textoBusqueda
     );
-
 
     // ✏️ Actualizar actividad
     @PUT("api/tasks/{id}")
@@ -82,26 +82,20 @@ public interface ApiService {
             @Body ActividadModel actividad
     );
 
-    // ❌ Eliminar actividad
     @DELETE("api/tasks/{id}")
     Call<Void> eliminarActividad(
-            @Path("id") String id,
-            @Header("Authorization") String token
+            @Header("Authorization") String token,
+            @Path("id") String id
     );
+
 
     // 📈 Obtener actividades promocionadas
     @GET("api/tasks/promoted")
     Call<List<ActividadModel>> getPromotedTasks();
 
-    // 📣 Promover una actividad - Para iniciar promoción
-    @POST("api/tasks/{id}/promote")
-    Call<Void> promoteTask(
-            @Header("Authorization") String token,
-            @Path("id") String actividadId
-    );
-
+    // 📣 Promover una actividad - PATCH
     @PATCH("api/tasks/{id}/promotion")
-    Call<Void> updatePromotion(
+    Call<ResponseBody> promoteTask(
             @Path("id") String id,
             @Body PromotionRequest promotionRequest
     );

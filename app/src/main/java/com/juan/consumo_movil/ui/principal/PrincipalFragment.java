@@ -1,8 +1,7 @@
 package com.juan.consumo_movil.ui.principal;
 
-import android.app.Dialog;
 import android.app.DatePickerDialog;
-import android.content.Context;
+import android.app.Dialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,7 +12,6 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -33,6 +31,7 @@ import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.ActividadAdapter;
+import com.juan.consumo_movil.models.PromotionRequest;
 import com.juan.consumo_movil.utils.SessionManager;
 
 import java.text.ParseException;
@@ -46,6 +45,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -80,6 +80,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         SnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerActividades);
 
+        // Preparar lista y adaptador
         itemList = new ArrayList<>();
         actividadAdapter = new ActividadAdapter(
                 requireContext(),
@@ -105,7 +106,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     public void cargarActividades() {
         SessionManager sessionManager = new SessionManager(requireContext());
         String token = sessionManager.getToken();
-
         if (token == null || token.isEmpty()) {
             Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
             return;
@@ -117,7 +117,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         ApiService api = RetrofitClient.getApiService();
         Call<List<ActividadModel>> call = api.obtenerActividades("Bearer " + token);
-
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
@@ -142,7 +141,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void procesarActividadesDeAPI(List<ActividadModel> actividadesAPI) {
         executorService.execute(() -> {
             List<ActividadAdapter.Item> tempItemList = new ArrayList<>();
-
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             Date fechaHoy;
             try {
@@ -190,7 +188,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_TITULO, null,
                         getString(R.string.actividades_pasadas).toUpperCase(Locale.getDefault()), null));
-
                 tempItemList.add(new ActividadAdapter.Item(ActividadAdapter.Item.TYPE_PASADAS, null, null, actividadesPasadas));
             }
 
@@ -209,7 +206,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEliminar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
-
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -220,7 +216,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         btnConfirmar.setOnClickListener(v -> {
             SessionManager sessionManager = new SessionManager(requireContext());
             String token = sessionManager.getToken();
-
             if (token == null || token.isEmpty()) {
                 Toast.makeText(getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
@@ -229,7 +224,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
             ApiService api = RetrofitClient.getApiService();
             Call<Void> call = api.eliminarActividad("Bearer " + token, actividad.getId());
-
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -259,7 +253,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void mostrarDialogoEditar(ActividadModel actividad) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_editar_actividad);
-
         EditText etEditarTitulo = dialog.findViewById(R.id.etEditarTitulo);
         EditText etEditarDescripcion = dialog.findViewById(R.id.etEditarDescripcion);
         EditText etEditarFecha = dialog.findViewById(R.id.etEditarFecha);
@@ -291,7 +284,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         });
 
         ivCerrar.setOnClickListener(v -> dialog.dismiss());
-
         dialog.show();
     }
 
@@ -299,7 +291,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         String fechaActual = editTextFecha.getText().toString();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         Calendar cal = Calendar.getInstance();
-
         if (!fechaActual.isEmpty()) {
             try {
                 cal.setTime(sdf.parse(fechaActual));
@@ -307,13 +298,11 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 e.printStackTrace();
             }
         }
-
         int year = cal.get(Calendar.YEAR);
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
 
         ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(requireContext(), R.style.DatePickerTheme_Custom);
-
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 contextThemeWrapper,
                 (view, year1, month1, day1) -> {
@@ -325,7 +314,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 year, month, day
         );
 
-        // Cambiar color de los botones positivo/negativo
         datePickerDialog.setOnShowListener(dialogInterface -> {
             try {
                 DatePickerDialog d = (DatePickerDialog) dialogInterface;
@@ -345,10 +333,9 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); // Fondo transparente
 
-        // Ajustar tamaño del diálogo (80% del ancho de pantalla)
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
-        lp.width = (int) (itemView.getContext().getResources().getDisplayMetrics().widthPixels * 0.8f);
+        lp.width = (int) (itemView.getResources().getDisplayMetrics().widthPixels * 0.8f);
         lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
         dialog.getWindow().setAttributes(lp);
 
@@ -363,36 +350,68 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         Button btnVolver = dialog.findViewById(R.id.btnVolver);
         ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle);
 
-        if (tvTituloDetalle != null)
-            tvTituloDetalle.setText(actividad.getTitle());
-        if (tvDescripcionDetalle != null)
-            tvDescripcionDetalle.setText(actividad.getDescription());
-        if (tvFechaDetalle != null)
-            tvFechaDetalle.setText(actividad.getDate());
-        if (tvLugarDetalle != null)
-            tvLugarDetalle.setText(actividad.getPlace());
-        if (tvResponsablesDetalle != null)
-            tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
+        tvTituloDetalle.setText(actividad.getTitle());
+        tvDescripcionDetalle.setText(actividad.getDescription());
+        tvFechaDetalle.setText(actividad.getDate());
+        tvLugarDetalle.setText(actividad.getPlace());
+        tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
 
-        if (ivImagenDetalle != null) {
-            if (actividad.getImage() != null && !actividad.getImage().isEmpty()) {
-                Glide.with(this)
-                        .load(actividad.getImage())
-                        .placeholder(R.drawable.default_image)
-                        .error(R.drawable.default_image)
-                        .into(ivImagenDetalle);
-            } else {
-                ivImagenDetalle.setImageResource(R.drawable.default_image);
-            }
+        if (ivImagenDetalle != null && actividad.getImage() != null && !actividad.getImage().isEmpty()) {
+            Glide.with(this)
+                    .load(actividad.getImage())
+                    .placeholder(R.drawable.default_image)
+                    .error(R.drawable.default_image)
+                    .into(ivImagenDetalle);
+        } else if (ivImagenDetalle != null) {
+            ivImagenDetalle.setImageResource(R.drawable.default_image);
         }
 
         if (switchPromocion != null) {
             switchPromocion.setChecked(actividad.isPromoted());
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) ->
-                    Toast.makeText(itemView.getContext(),
-                            isChecked ? "Promocionando: " + actividad.getTitle()
-                                    : "Desactivado: " + actividad.getTitle(),
-                            Toast.LENGTH_SHORT).show());
+            switchPromocion.setEnabled(!actividad.isPasada());
+
+            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                SessionManager sessionManager = new SessionManager(requireContext());
+                String token = sessionManager.getToken();
+                if (token == null || token.isEmpty()) {
+                    Toast.makeText(itemView.getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
+                    switchPromocion.setChecked(!isChecked);
+                    return;
+                }
+
+                String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
+                String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+                        .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)); // 30 días
+
+                PromotionRequest request = new PromotionRequest(
+                        actividad.getId(),
+                        isChecked,
+                        startDate,
+                        endDate
+                );
+
+                ApiService api = RetrofitClient.getApiService();
+                api.promoteTask(actividad.getId(), request).enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        if (response.isSuccessful()) {
+                            actividad.setPromoted(isChecked);
+                            Toast.makeText(buttonView.getContext(),
+                                    isChecked ? "Actividad promocionada" : "Promoción desactivada",
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(buttonView.getContext(), "Error al actualizar promoción", Toast.LENGTH_SHORT).show();
+                            switchPromocion.setChecked(!isChecked);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                        Toast.makeText(buttonView.getContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                        switchPromocion.setChecked(!isChecked);
+                    }
+                });
+            });
         }
 
         if (btnEditar != null) {
@@ -419,7 +438,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
     private void actualizarVisibilidad() {
         recyclerActividades.setVisibility(itemList.isEmpty() ? View.GONE : View.VISIBLE);
         tvEmptyActividades.setVisibility(itemList.isEmpty() ? View.VISIBLE : View.GONE);
-
         if (itemList.isEmpty()) {
             tvEmptyActividades.setText("No hay actividades disponibles");
         }
