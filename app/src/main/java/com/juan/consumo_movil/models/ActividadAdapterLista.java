@@ -40,6 +40,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     private OnEditarClickListener editarListener;
     private OnEliminarClickListener eliminarListener;
     private OnPromocionarClickListener promocionarListener;
+    private OnGestionarAsistentesClickListener gestionarAsistentesClickListener;
 
     public interface OnActividadClickListener {
         void onActividadClick(Actividad actividad);
@@ -65,6 +66,10 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         void onPromocionarClick(Actividad actividad, boolean isChecked);
     }
 
+    public interface OnGestionarAsistentesClickListener {
+        void onGestionarAsistentesClick(Actividad actividad);
+    }
+
     public ActividadAdapterLista(List<Actividad> actividadList,
                                  OnActividadClickListener clickListener,
                                  OnDetallesClickListener detallesListener,
@@ -72,6 +77,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
                                  OnEditarClickListener editarListener,
                                  OnEliminarClickListener eliminarListener,
                                  OnPromocionarClickListener promocionarListener,
+                                 OnGestionarAsistentesClickListener gestionarAsistentesClickListener,
                                  SessionManager sessionManager) {
         this.actividadList = actividadList;
         this.clickListener = clickListener;
@@ -80,6 +86,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         this.editarListener = editarListener;
         this.eliminarListener = eliminarListener;
         this.promocionarListener = promocionarListener;
+        this.gestionarAsistentesClickListener = gestionarAsistentesClickListener;
 
         if (sessionManager != null && sessionManager.getUserId() != null) {
             this.miUsuarioId = sessionManager.getUserId();
@@ -139,6 +146,8 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         notifyDataSetChanged();
     }
 
+    // ————————————————————————————— ViewHolder Classes ——————————————————————————————
+
     class MiActividadViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitulo;
         ImageView ivImagen;
@@ -146,6 +155,10 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         Switch switchPromocion;
         ImageButton btnEditar;
         ImageButton btnEliminar;
+
+        // Botones nuevos para gestión de asistentes
+        TextView tvAgregarAsistentes; // Debe estar en item_actividad.xml
+        ImageButton btnPlus;
 
         MiActividadViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -155,6 +168,10 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             switchPromocion = itemView.findViewById(R.id.switchPromocion);
             btnEditar = itemView.findViewById(R.id.btnEditar);
             btnEliminar = itemView.findViewById(R.id.btnEliminar);
+
+            // Estos IDs deben existir en tu layout item_actividad.xml
+            tvAgregarAsistentes = itemView.findViewById(R.id.tvAgregarAsistentes);
+            btnPlus = itemView.findViewById(R.id.btnPlus);
         }
 
         void bind(Actividad actividad) {
@@ -162,35 +179,43 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             cargarImagen(ivImagen, actividad.getImagenRuta());
             switchPromocion.setChecked(actividad.isPromocionada());
 
+            // Navegación al hacer clic en el item
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) {
                     clickListener.onActividadClick(actividad);
                 }
             });
 
+            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 if (detallesListener != null) {
                     detallesListener.onDetallesClick(actividad);
                 }
             });
 
+            // Botón Editar
             btnEditar.setOnClickListener(v -> {
                 if (editarListener != null) {
                     editarListener.onEditarClick(actividad);
                 }
             });
 
+            // Botón Eliminar
             btnEliminar.setOnClickListener(v -> {
                 if (eliminarListener != null) {
                     eliminarListener.onEliminarClick(actividad);
                 }
             });
 
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (promocionarListener != null) {
-                    promocionarListener.onPromocionarClick(actividad, isChecked);
+            // Redirección a GestionarFragment
+            View.OnClickListener navigateListener = v -> {
+                if (gestionarAsistentesClickListener != null) {
+                    gestionarAsistentesClickListener.onGestionarAsistentesClick(actividad);
                 }
-            });
+            };
+
+            tvAgregarAsistentes.setOnClickListener(navigateListener);
+            btnPlus.setOnClickListener(navigateListener);
         }
     }
 
@@ -253,6 +278,8 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             });
         }
     }
+
+    // ————————————————————————————— Métodos auxiliares ——————————————————————————————
 
     private void cargarImagen(ImageView imageView, String imagePath) {
         if (imagePath == null || imagePath.isEmpty()) {
@@ -326,6 +353,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     public static void mostrarDialogoEditar(Actividad actividad, Context context, OnGuardarCambiosListener listener) {
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialogo_editar_actividad);
+
         EditText etEditarTitulo = dialog.findViewById(R.id.etEditarTitulo);
         EditText etEditarDescripcion = dialog.findViewById(R.id.etEditarDescripcion);
         EditText etEditarFecha = dialog.findViewById(R.id.etEditarFecha);
@@ -357,6 +385,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     public static void mostrarDialogoEliminar(Actividad actividad, Context context, OnEliminarConfirmadoListener listener) {
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
+
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
@@ -372,6 +401,8 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         dialog.show();
     }
 
+    // ————————————————————————————— Setters para listeners ——————————————————————————————
+
     public void setOnEditarClickListener(OnEditarClickListener listener) {
         this.editarListener = listener;
     }
@@ -383,6 +414,12 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     public void setOnPromocionarClickListener(OnPromocionarClickListener listener) {
         this.promocionarListener = listener;
     }
+
+    public void setOnGestionarAsistentesClickListener(OnGestionarAsistentesClickListener listener) {
+        this.gestionarAsistentesClickListener = listener;
+    }
+
+    // ————————————————————————————— Interfaces adicionales ——————————————————————————————
 
     public interface OnGuardarCambiosListener {
         void onGuardar(Actividad actividad);

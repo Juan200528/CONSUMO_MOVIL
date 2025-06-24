@@ -24,6 +24,7 @@ import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.Actividad;
 import com.juan.consumo_movil.models.ActividadAdapterLista;
+import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 import com.juan.consumo_movil.utils.SessionManager;
 
 import java.text.ParseException;
@@ -69,12 +70,13 @@ public class ListaFragment extends Fragment implements
         // Inicializar adaptador con todos los listeners
         adapter = new ActividadAdapterLista(
                 actividadList,
-                this,
-                this,
-                this,
-                this,
-                this,
-                this,
+                this::onActividadClick,
+                this::onDetallesClick,
+                this::onAsistirClick,
+                this::onEditarClick,
+                this::onEliminarClick,
+                this::onPromocionarClick,
+                this::onGestionarAsistentesClick,
                 sessionManager
         );
 
@@ -268,5 +270,35 @@ public class ListaFragment extends Fragment implements
         Toast.makeText(requireContext(),
                 (isChecked ? "Promocionar: " : "Despromocionar: ") + actividad.getTitulo(),
                 Toast.LENGTH_SHORT).show();
+    }
+
+    private void onGestionarAsistentesClick(Actividad actividad) {
+        String activityId = actividad.getId();
+        String activityTitle = actividad.getTitulo();
+
+        // Validar ID
+        if (activityId == null || activityId.isEmpty()) {
+            Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Validar sesión
+        if (sessionManager.fetchAuthToken() == null) {
+            Toast.makeText(requireContext(), "Token no disponible. Inicia sesión nuevamente.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Navegar a GestionarFragment
+        GestionarFragment gestionarFragment = new GestionarFragment();
+        Bundle args = new Bundle();
+        args.putString("activity_id", activityId);
+        args.putString("activity_title", activityTitle);
+        gestionarFragment.setArguments(args);
+
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, gestionarFragment)
+                .addToBackStack(null)
+                .commit();
     }
 }
