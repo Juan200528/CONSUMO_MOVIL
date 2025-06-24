@@ -1,6 +1,7 @@
 package com.juan.consumo_movil.model;
 
 import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 
 public class ActividadModel {
@@ -126,6 +127,7 @@ public class ActividadModel {
         this.pasada = pasada;
     }
 
+
     public String getImage() {
         return imageUrl;
     }
@@ -141,4 +143,5 @@ public class ActividadModel {
     public void setUser(User user) {
         this.user = user;
     }
+
 }

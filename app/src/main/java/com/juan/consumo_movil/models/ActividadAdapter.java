@@ -1,34 +1,32 @@
 package com.juan.consumo_movil.models;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
-import com.juan.consumo_movil.api.ApiService;
-import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
+import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import retrofit2.http.HEAD;
 
 public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -123,6 +121,7 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Item item = itemList.get(position);
+
         if (holder instanceof ActividadViewHolder) {
             ((ActividadViewHolder) holder).bind(item.getActividadModel(),
                     onActividadClickListener,
@@ -156,6 +155,8 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         ImageView ivActividadImagen;
         TextView btnVerDetalles;
         Switch switchPromocion;
+        TextView tvAgregarAsistentes;
+        ImageButton btnPlus;
 
         public ActividadViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -163,6 +164,8 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             ivActividadImagen = itemView.findViewById(R.id.ivActividadImagen);
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             switchPromocion = itemView.findViewById(R.id.switchPromocion);
+            tvAgregarAsistentes = itemView.findViewById(R.id.tvAgregarAsistentes);
+            btnPlus = itemView.findViewById(R.id.btnPlus);
         }
 
         public void bind(ActividadModel actividadModel,
@@ -194,7 +197,28 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
             // Configurar switch promocionada
             switchPromocion.setChecked(actividadModel.isPromoted());
-            switchPromocion.setEnabled(!actividadModel.isPasada());
+
+            // Listener compartido para navegar a GestionarFragment
+            View.OnClickListener navigateListener = v -> {
+                Bundle args = new Bundle();
+                args.putString("activity_id", actividadModel.getId());
+                args.putString("activity_title", actividadModel.getTitle());
+
+                Fragment gestionarFragment = new GestionarFragment();
+                gestionarFragment.setArguments(args);
+
+                if (itemView.getContext() instanceof FragmentActivity) {
+                    FragmentActivity activity = (FragmentActivity) itemView.getContext();
+                    activity.getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_container, gestionarFragment)
+                            .addToBackStack(null)
+                            .commit();
+                }
+            };
+
+            tvAgregarAsistentes.setOnClickListener(navigateListener);
+            btnPlus.setOnClickListener(navigateListener);
 
             // Click en tarjeta completa
             itemView.setOnClickListener(v -> {
@@ -221,38 +245,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             itemView.findViewById(R.id.btnEliminar).setOnClickListener(v -> {
                 if (onEliminarClickListener != null) {
                     onEliminarClickListener.onEliminarClick(actividadModel);
-                }
-            });
-
-            // Acción del Switch Promocionar
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (!actividadModel.isPasada()) {
-                    String id = actividadModel.getId();
-                    if (id == null || id.isEmpty() || id.equals("0")) {
-                        Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
-                    String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
-                    PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
-
-                    ApiService apiService = RetrofitClient.getApiService();
-                    apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
-                        @Override
-                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                            if (response.isSuccessful()) {
-                                Toast.makeText(buttonView.getContext(), "Promoción actualizada", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(buttonView.getContext(), "Error al actualizar", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(Call<ResponseBody> call, Throwable t) {
-                            Toast.makeText(buttonView.getContext(), "Fallo de red", Toast.LENGTH_SHORT).show();
-                        }
-                    });
                 }
             });
         }
@@ -298,8 +290,12 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     onDetallesClickListener
             );
 
+
             recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(),
                     LinearLayoutManager.HORIZONTAL, false));
+
+            recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext()));
+
             recyclerPasadas.setAdapter(adapter);
         }
     }

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gestión de Asistencia"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"
+        android:layout_gravity="center"/>
+
+
+    <!--Titulo de la actividad-->
+    <TextView
+        android:id="@+id/tvTituloActividad"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Título de la actividad"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:background="#C1C0C0"
+        android:layout_marginBottom="1dp"
+        android:layout_gravity="center"/>
+    <TextView
+        android:id="@+id/tvEmptyGestion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Selecciona actividad para gestionar asistencia\nPresiona el boton Asistentes + de tu actividad"
+        android:textAlignment="center"
+        android:layout_marginBottom="18dp"
+        android:textSize="16sp"
+        android:visibility="gone"/>
+
+
+    <!-- Título principal -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Agregar Asistentes"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"/>
+
+
+    <!-- Tabla para agregar nuevos asistentes -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:elevation="2dp"
+        android:layout_marginBottom="24dp">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="6dp">
+
+
+            <EditText
+                android:id="@+id/etNombreAsistente"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="3dp"
+                android:inputType="textCapWords|textPersonName"
+                android:background="@drawable/edit_text_border"
+                android:hint="Nombre" />
+
+
+            <EditText
+                android:id="@+id/etEmailAsistente"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="3dp"
+                android:background="@drawable/edit_text_border"
+                android:hint="Correo electrónico"
+                android:inputType="textEmailAddress" />
+        </LinearLayout>
+
+
+        <Button
+            android:id="@+id/btnAgregarAsistente"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:layout_marginBottom="20dp"
+            android:backgroundTint="#4CAF50"
+            android:text="Agregar"
+            android:layout_gravity="end"
+            android:textColor="@android:color/white" />
+
+
+    </LinearLayout>
+
+
+    <!-- Título de la lista de asistentes -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Lista de Asistentes"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:textSize="20sp"
+        android:textStyle="bold"/>
+
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@android:color/white"
+            android:elevation="2dp">
+
+
+            <!-- Encabezado de la tabla -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#E9DEDE"
+                android:padding="10dp">
+
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Nombre"
+                    android:textStyle="bold" />
+
+
+                <TextView
+                    android:layout_width="180dp"
+                    android:layout_height="wrap_content"
+                    android:text="Correo Electrónico"
+                    android:textStyle="bold"/>
+
+
+                <TextView
+                    android:layout_width="60dp"
+                    android:layout_height="wrap_content"
+                    android:text="Acciones"
+                    android:gravity="center"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <!-- Contenedor para asistentes (se llenará dinámicamente) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/containerAsistentes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -10,13 +10,17 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+
 import com.juan.consumo_movil.R;
+import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 import com.juan.consumo_movil.ui.lista_actividades.ListaFragment;
 import com.juan.consumo_movil.ui.promocionadas.PromocionadasFragment;
 
+//import com.juan.consumo_movil.ui.RecordatorioFragment;
+
 public class FragmentActPanel extends Fragment {
 
-    private CardView cardListaActividades, cardPromocionadas;
+    private CardView cardGestionAsistentes, cardListaActividades, cardPromocionadas, cardRecordatorio;
 
     public FragmentActPanel() {}
 
@@ -24,12 +28,17 @@ public class FragmentActPanel extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_actipanel, container, false);
 
+        cardGestionAsistentes = view.findViewById(R.id.card_gestion_asistentes);
         cardListaActividades = view.findViewById(R.id.card_lista_actividades);
         cardPromocionadas = view.findViewById(R.id.card_actividades_promocionadas);
+        cardRecordatorio = view.findViewById(R.id.card_recordatorio);
 
+        cardGestionAsistentes.setOnClickListener(v -> abrirFragmento(new GestionarFragment()));
         cardListaActividades.setOnClickListener(v -> abrirFragmento(new ListaFragment()));
         cardPromocionadas.setOnClickListener(v -> abrirFragmento(new PromocionadasFragment()));
+       // cardRecordatorio.setOnClickListener(v -> abrirFragmento(new RecordatorioFragment()));
 
+        aplicarEfectoPresion(view.findViewById(R.id.miBotton1));
         aplicarEfectoPresion(view.findViewById(R.id.miBotton2));
         aplicarEfectoPresion(view.findViewById(R.id.miBotton3));
         aplicarEfectoPresion(view.findViewById(R.id.miBotton4));
@@ -40,7 +49,7 @@ public class FragmentActPanel extends Fragment {
     private void abrirFragmento(Fragment fragment) {
         FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, fragment);
-        transaction.addToBackStack(null); // ✅ Añadimos al stack
+        transaction.addToBackStack(null);
         transaction.commit();
     }
 
