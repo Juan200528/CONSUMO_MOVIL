@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -32,9 +33,13 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
     private List<Actividad> actividadList;
     private String miUsuarioId;
+
     private OnActividadClickListener clickListener;
     private OnDetallesClickListener detallesListener;
     private OnAsistirClickListener asistirListener;
+    private OnEditarClickListener editarListener;
+    private OnEliminarClickListener eliminarListener;
+    private OnPromocionarClickListener promocionarListener;
 
     public interface OnActividadClickListener {
         void onActividadClick(Actividad actividad);
@@ -48,15 +53,33 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         void onAsistirClick(Actividad actividad, int position);
     }
 
+    public interface OnEditarClickListener {
+        void onEditarClick(Actividad actividad);
+    }
+
+    public interface OnEliminarClickListener {
+        void onEliminarClick(Actividad actividad);
+    }
+
+    public interface OnPromocionarClickListener {
+        void onPromocionarClick(Actividad actividad, boolean isChecked);
+    }
+
     public ActividadAdapterLista(List<Actividad> actividadList,
                                  OnActividadClickListener clickListener,
                                  OnDetallesClickListener detallesListener,
                                  OnAsistirClickListener asistirListener,
+                                 OnEditarClickListener editarListener,
+                                 OnEliminarClickListener eliminarListener,
+                                 OnPromocionarClickListener promocionarListener,
                                  SessionManager sessionManager) {
         this.actividadList = actividadList;
         this.clickListener = clickListener;
         this.detallesListener = detallesListener;
         this.asistirListener = asistirListener;
+        this.editarListener = editarListener;
+        this.eliminarListener = eliminarListener;
+        this.promocionarListener = promocionarListener;
 
         if (sessionManager != null && sessionManager.getUserId() != null) {
             this.miUsuarioId = sessionManager.getUserId();
@@ -81,7 +104,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-
         if (viewType == VIEW_TYPE_MI_ACTIVIDAD) {
             View view = inflater.inflate(R.layout.item_actividad, parent, false);
             return new MiActividadViewHolder(view);
@@ -97,7 +119,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Actividad actividad = actividadList.get(position);
-
         if (holder instanceof MiActividadViewHolder) {
             ((MiActividadViewHolder) holder).bind(actividad);
         } else if (holder instanceof OtraActividadViewHolder) {
@@ -117,8 +138,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         actividadList.addAll(nuevasActividades);
         notifyDataSetChanged();
     }
-
-    // ——————————————————————————————— ViewHolder Classes ————————————————————————————————
 
     class MiActividadViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitulo;
@@ -140,41 +159,37 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
         void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
-
             cargarImagen(ivImagen, actividad.getImagenRuta());
-
             switchPromocion.setChecked(actividad.isPromocionada());
 
-            // Click en item
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) {
                     clickListener.onActividadClick(actividad);
                 }
             });
 
-            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 if (detallesListener != null) {
                     detallesListener.onDetallesClick(actividad);
                 }
             });
 
-            // Botón Editar
             btnEditar.setOnClickListener(v -> {
-                Toast.makeText(v.getContext(), "Editando: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+                if (editarListener != null) {
+                    editarListener.onEditarClick(actividad);
+                }
             });
 
-            // Botón Eliminar
             btnEliminar.setOnClickListener(v -> {
-                Toast.makeText(v.getContext(), "Eliminar: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+                if (eliminarListener != null) {
+                    eliminarListener.onEliminarClick(actividad);
+                }
             });
 
-            // Cambio en promoción
             switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                Toast.makeText(buttonView.getContext(),
-                        isChecked ? "Promocionar: " + actividad.getTitulo()
-                                : "Despromocionar: " + actividad.getTitulo(),
-                        Toast.LENGTH_SHORT).show();
+                if (promocionarListener != null) {
+                    promocionarListener.onPromocionarClick(actividad, isChecked);
+                }
             });
         }
     }
@@ -197,13 +212,11 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             tvTitulo.setText(actividad.getTitulo());
             cargarImagen(ivImagen, actividad.getImagenRuta());
 
-            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 mostrarDialogoDetalles(actividad, v.getContext());
                 if (detallesListener != null) detallesListener.onDetallesClick(actividad);
             });
 
-            // Botón Asistir
             btnAsistir.setOnClickListener(v -> {
                 if (asistirListener != null) {
                     asistirListener.onAsistirClick(actividad, getAdapterPosition());
@@ -230,36 +243,29 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             tvTitulo.setText(actividad.getTitulo());
             cargarImagen(ivImagen, actividad.getImagenRuta());
 
-            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 mostrarDialogoDetalles(actividad, v.getContext());
                 if (detallesListener != null) detallesListener.onDetallesClick(actividad);
             });
 
-            // Botón Cancelar Asistencia
             btnCancelar.setOnClickListener(v -> {
                 Toast.makeText(v.getContext(), "Dejar de asistir a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
             });
         }
     }
 
-    // ———————————————————————————————— Métodos auxiliares ————————————————————————————————
-
     private void cargarImagen(ImageView imageView, String imagePath) {
         if (imagePath == null || imagePath.isEmpty()) {
             imageView.setImageResource(R.drawable.default_image);
             return;
         }
-
         if (imagePath.startsWith("http")) {
-            // Es una URL remota
             Glide.with(imageView.getContext())
                     .load(imagePath)
                     .placeholder(R.drawable.default_image)
                     .error(R.drawable.default_image)
                     .into(imageView);
         } else {
-            // Es una ruta local
             File file = new File(imagePath);
             if (file.exists()) {
                 imageView.setImageURI(Uri.fromFile(file));
@@ -273,10 +279,9 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
-        lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.8f); // 80% ancho
+        lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.8f);
         lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
         dialog.getWindow().setAttributes(lp);
 
@@ -294,7 +299,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         tvLugar.setText(actividad.getLugar());
         tvResponsables.setText(actividad.getResponsables());
 
-        // Cargar imagen
         String imagePath = actividad.getImagenRuta();
         if (imagePath != null && !imagePath.isEmpty()) {
             if (imagePath.startsWith("http")) {
@@ -317,5 +321,74 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
         btnVolver.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
+    }
+
+    public static void mostrarDialogoEditar(Actividad actividad, Context context, OnGuardarCambiosListener listener) {
+        Dialog dialog = new Dialog(context);
+        dialog.setContentView(R.layout.dialogo_editar_actividad);
+        EditText etEditarTitulo = dialog.findViewById(R.id.etEditarTitulo);
+        EditText etEditarDescripcion = dialog.findViewById(R.id.etEditarDescripcion);
+        EditText etEditarFecha = dialog.findViewById(R.id.etEditarFecha);
+        EditText etEditarLugar = dialog.findViewById(R.id.etEditarLugar);
+        EditText etEditarResponsables = dialog.findViewById(R.id.etEditarResponsables);
+        Button btnGuardar = dialog.findViewById(R.id.btnGuardarCambios);
+        ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
+
+        etEditarTitulo.setText(actividad.getTitulo());
+        etEditarDescripcion.setText(actividad.getDescripcion());
+        etEditarFecha.setText(actividad.getFecha());
+        etEditarLugar.setText(actividad.getLugar());
+        etEditarResponsables.setText(actividad.getResponsables());
+
+        btnGuardar.setOnClickListener(v -> {
+            actividad.setTitulo(etEditarTitulo.getText().toString());
+            actividad.setDescripcion(etEditarDescripcion.getText().toString());
+            actividad.setFecha(etEditarFecha.getText().toString());
+            actividad.setLugar(etEditarLugar.getText().toString());
+            actividad.setResponsables(etEditarResponsables.getText().toString());
+            listener.onGuardar(actividad);
+            dialog.dismiss();
+        });
+
+        ivCerrar.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    public static void mostrarDialogoEliminar(Actividad actividad, Context context, OnEliminarConfirmadoListener listener) {
+        Dialog dialog = new Dialog(context);
+        dialog.setContentView(R.layout.dialogo_eliminar_actividad);
+        ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
+        Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
+        Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
+
+        ivCerrar.setOnClickListener(v -> dialog.dismiss());
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirmar.setOnClickListener(v -> {
+            listener.onEliminar(actividad);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    public void setOnEditarClickListener(OnEditarClickListener listener) {
+        this.editarListener = listener;
+    }
+
+    public void setOnEliminarClickListener(OnEliminarClickListener listener) {
+        this.eliminarListener = listener;
+    }
+
+    public void setOnPromocionarClickListener(OnPromocionarClickListener listener) {
+        this.promocionarListener = listener;
+    }
+
+    public interface OnGuardarCambiosListener {
+        void onGuardar(Actividad actividad);
+    }
+
+    public interface OnEliminarConfirmadoListener {
+        void onEliminar(Actividad actividad);
     }
 }

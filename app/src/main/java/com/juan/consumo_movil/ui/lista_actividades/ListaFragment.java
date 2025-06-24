@@ -40,12 +40,14 @@ import retrofit2.Response;
 public class ListaFragment extends Fragment implements
         ActividadAdapterLista.OnActividadClickListener,
         ActividadAdapterLista.OnDetallesClickListener,
-        ActividadAdapterLista.OnAsistirClickListener {
+        ActividadAdapterLista.OnAsistirClickListener,
+        ActividadAdapterLista.OnEditarClickListener,
+        ActividadAdapterLista.OnEliminarClickListener,
+        ActividadAdapterLista.OnPromocionarClickListener {
 
     private RecyclerView recyclerView;
     private ActividadAdapterLista adapter;
     private List<Actividad> actividadList = new ArrayList<>();
-    private List<Actividad> listaOriginal = new ArrayList<>();
     private TextView tvEmpty;
     private ImageButton btnBuscar;
     private SessionManager sessionManager;
@@ -63,7 +65,19 @@ public class ListaFragment extends Fragment implements
         miUsuarioId = sessionManager.getUserId();
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new ActividadAdapterLista(actividadList, this, this, this, sessionManager);
+
+        // Inicializar adaptador con todos los listeners
+        adapter = new ActividadAdapterLista(
+                actividadList,
+                this,
+                this,
+                this,
+                this,
+                this,
+                this,
+                sessionManager
+        );
+
         recyclerView.setAdapter(adapter);
 
         cargarActividadesIniciales();
@@ -86,11 +100,14 @@ public class ListaFragment extends Fragment implements
                     @Override
                     public void onResponse(@NonNull Call<List<ActividadModel>> call, @NonNull Response<List<ActividadModel>> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            listaOriginal.clear();
+                            List<Actividad> actividadesOtrosUsuarios = new ArrayList<>();
                             for (ActividadModel model : response.body()) {
-                                listaOriginal.add(convertirAPIaActividad(model));
+                                Actividad act = convertirAPIaActividad(model);
+                                actividadesOtrosUsuarios.add(act);
                             }
-                            aplicarFiltros("", false, false, false);
+                            actividadList = actividadesOtrosUsuarios;
+                            adapter.updateItems(actividadList);
+                            actualizarVisibilidad();
                         } else {
                             actualizarVisibilidad();
                         }
@@ -223,5 +240,33 @@ public class ListaFragment extends Fragment implements
     @Override
     public void onAsistirClick(Actividad actividad, int position) {
         Toast.makeText(requireContext(), "Asistiendo a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onEditarClick(Actividad actividad) {
+        ActividadAdapterLista.mostrarDialogoEditar(actividad, requireContext(), this::guardarCambios);
+    }
+
+    @Override
+    public void onEliminarClick(Actividad actividad) {
+        ActividadAdapterLista.mostrarDialogoEliminar(actividad, requireContext(), this::eliminarActividad);
+    }
+
+    private void guardarCambios(Actividad actividad) {
+        Toast.makeText(requireContext(), "Cambios guardados: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+        adapter.updateItems(actividadList); // Refresca la lista
+    }
+
+    private void eliminarActividad(Actividad actividad) {
+        actividadList.remove(actividad);
+        adapter.updateItems(actividadList);
+        Toast.makeText(requireContext(), "Actividad eliminada: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onPromocionarClick(Actividad actividad, boolean isChecked) {
+        Toast.makeText(requireContext(),
+                (isChecked ? "Promocionar: " : "Despromocionar: ") + actividad.getTitulo(),
+                Toast.LENGTH_SHORT).show();
     }
 }
