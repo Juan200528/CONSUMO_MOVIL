@@ -7,10 +7,12 @@ import android.widget.Toast;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+
 import com.google.gson.Gson;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.models.Asistente;
+import com.juan.consumo_movil.utils.SessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +24,6 @@ import retrofit2.Response;
 public class GestionarViewModel extends AndroidViewModel {
 
     private static final String TAG = "GestionarViewModel";
-
     private MutableLiveData<List<Asistente>> asistentes;
     private ApiService apiService;
     private String authToken;
@@ -32,10 +33,9 @@ public class GestionarViewModel extends AndroidViewModel {
         asistentes = new MutableLiveData<>(new ArrayList<>());
         apiService = RetrofitClient.getApiService();
 
-        // Cargar token desde SharedPreferences
-        authToken = application.getSharedPreferences("user_prefs", Application.MODE_PRIVATE)
+        // Cargar token desde SharedPreferences usando el mismo nombre que SessionManager
+        authToken = application.getSharedPreferences("user_session", Application.MODE_PRIVATE)
                 .getString("auth_token", "");
-
         Log.d(TAG, "Token obtenido en constructor: " + (authToken != null ? "✓" : "✗"));
     }
 
@@ -46,7 +46,7 @@ public class GestionarViewModel extends AndroidViewModel {
     public void cargarAsistentes(String taskId) {
         // Recargar token por si ha cambiado
         authToken = getApplication()
-                .getSharedPreferences("user_prefs", Application.MODE_PRIVATE)
+                .getSharedPreferences("user_session", Application.MODE_PRIVATE)
                 .getString("auth_token", "");
 
         if (authToken == null || authToken.isEmpty()) {
@@ -62,7 +62,6 @@ public class GestionarViewModel extends AndroidViewModel {
         }
 
         Log.d(TAG, "Cargando asistentes para taskId: " + taskId);
-
         apiService.getAttendees(taskId, "Bearer " + authToken)
                 .enqueue(new Callback<List<Asistente>>() {
                     @Override
@@ -79,7 +78,6 @@ public class GestionarViewModel extends AndroidViewModel {
                             } catch (Exception e) {
                                 errorBody = "Error al leer cuerpo de error";
                             }
-
                             Log.e(TAG, "Error al cargar asistentes. Código: " + response.code() + ", Mensaje: " + response.message() + ", Cuerpo: " + errorBody);
                             Toast.makeText(getApplication(), "Error al cargar los asistentes", Toast.LENGTH_SHORT).show();
                         }
@@ -96,7 +94,7 @@ public class GestionarViewModel extends AndroidViewModel {
     public void insertarAsistente(Asistente asistente, String taskId) {
         // Validar token antes de hacer la llamada
         authToken = getApplication()
-                .getSharedPreferences("user_prefs", Application.MODE_PRIVATE)
+                .getSharedPreferences("user_session", Application.MODE_PRIVATE)
                 .getString("auth_token", "");
 
         if (authToken == null || authToken.isEmpty()) {
@@ -113,7 +111,6 @@ public class GestionarViewModel extends AndroidViewModel {
 
         Gson gson = new Gson();
         Log.d(TAG, "Enviando asistente: " + gson.toJson(asistente));
-
         apiService.confirmAttendance("Bearer " + authToken, asistente)
                 .enqueue(new Callback<Asistente>() {
                     @Override
@@ -130,7 +127,6 @@ public class GestionarViewModel extends AndroidViewModel {
                             } catch (Exception e) {
                                 errorBody = "Error al leer el cuerpo de error";
                             }
-
                             Log.e(TAG, "Error al agregar asistente. Código: " + response.code() + ", Mensaje: " + response.message() + ", Cuerpo: " + errorBody);
                             if (response.code() == 401) {
                                 Toast.makeText(getApplication(), "Sesión inválida, inicia sesión nuevamente", Toast.LENGTH_SHORT).show();
@@ -151,7 +147,7 @@ public class GestionarViewModel extends AndroidViewModel {
     public void actualizarAsistente(String id, Asistente asistente, String taskId) {
         // Validar token y ID antes de continuar
         authToken = getApplication()
-                .getSharedPreferences("user_prefs", Application.MODE_PRIVATE)
+                .getSharedPreferences("user_session", Application.MODE_PRIVATE)
                 .getString("auth_token", "");
 
         if (authToken == null || authToken.isEmpty()) {
@@ -168,7 +164,6 @@ public class GestionarViewModel extends AndroidViewModel {
 
         Gson gson = new Gson();
         Log.d(TAG, "Actualizando asistente con ID: " + id + ", Datos: " + gson.toJson(asistente));
-
         apiService.updateAttendance(id, "Bearer " + authToken, asistente)
                 .enqueue(new Callback<Asistente>() {
                     @Override
@@ -185,7 +180,6 @@ public class GestionarViewModel extends AndroidViewModel {
                             } catch (Exception e) {
                                 errorBody = "Error al leer cuerpo de error";
                             }
-
                             Log.e(TAG, "Error al actualizar asistente. Código: " + response.code() + ", Mensaje: " + response.message() + ", Cuerpo: " + errorBody);
                             if (response.code() == 401) {
                                 Toast.makeText(getApplication(), "Sesión inválida, inicia sesión nuevamente", Toast.LENGTH_SHORT).show();
@@ -206,7 +200,7 @@ public class GestionarViewModel extends AndroidViewModel {
     public void eliminarAsistentePorId(String id, String taskId) {
         // Validar token y ID antes de continuar
         authToken = getApplication()
-                .getSharedPreferences("user_prefs", Application.MODE_PRIVATE)
+                .getSharedPreferences("user_session", Application.MODE_PRIVATE)
                 .getString("auth_token", "");
 
         if (authToken == null || authToken.isEmpty()) {
@@ -222,7 +216,6 @@ public class GestionarViewModel extends AndroidViewModel {
         }
 
         Log.d(TAG, "Eliminando asistente con ID: " + id);
-
         apiService.deleteAttendance(id, "Bearer " + authToken)
                 .enqueue(new Callback<Void>() {
                     @Override
@@ -239,7 +232,6 @@ public class GestionarViewModel extends AndroidViewModel {
                             } catch (Exception e) {
                                 errorBody = "Error al leer cuerpo de error";
                             }
-
                             Log.e(TAG, "Error al eliminar asistente. Código: " + response.code() + ", Mensaje: " + response.message() + ", Cuerpo: " + errorBody);
                             if (response.code() == 401) {
                                 Toast.makeText(getApplication(), "Sesión inválida, inicia sesión nuevamente", Toast.LENGTH_SHORT).show();
