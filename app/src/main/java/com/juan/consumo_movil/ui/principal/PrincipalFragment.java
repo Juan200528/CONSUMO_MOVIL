@@ -32,6 +32,7 @@ import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.ActividadAdapter;
 import com.juan.consumo_movil.models.PromotionRequest;
+import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 import com.juan.consumo_movil.utils.SessionManager;
 
 import java.text.ParseException;
@@ -80,19 +81,32 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         SnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerActividades);
 
-        // Preparar lista y adaptador
         itemList = new ArrayList<>();
+
         actividadAdapter = new ActividadAdapter(
                 requireContext(),
                 itemList,
                 this,
                 this::mostrarDialogoEliminar,
                 this::mostrarDialogoEditar,
-                this::mostrarDialogoDetalles
-        );
-        recyclerActividades.setAdapter(actividadAdapter);
+                this::mostrarDialogoDetalles,
+                actividad -> {
+                    // Acción al hacer clic en "Asistentes +"
+                    Bundle args = new Bundle();
+                    args.putString("activity_id", actividad.getId());
+                    args.putString("activity_title", actividad.getTitle());
 
-        cargarActividades();
+                    GestionarFragment gestionarFragment = new GestionarFragment();
+                    gestionarFragment.setArguments(args);
+
+                    getParentFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, gestionarFragment)
+                            .addToBackStack(null)
+                            .commit();
+                }
+        );
+
+        recyclerActividades.setAdapter(actividadAdapter);
 
         return root;
     }

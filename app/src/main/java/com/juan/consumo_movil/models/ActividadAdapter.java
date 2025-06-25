@@ -8,19 +8,24 @@ import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
+import com.juan.consumo_movil.models.PromotionRequest;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -67,6 +72,7 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     private OnEliminarClickListener onEliminarClickListener;
     private OnEditarClickListener onEditarClickListener;
     private OnDetallesClickListener onDetallesClickListener;
+    private OnAsistentesClickListener onAsistentesClickListener;
 
     public interface OnActividadClickListener {
         void onActividadClick(ActividadModel actividadModel);
@@ -84,16 +90,22 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         void onDetallesClick(ActividadModel actividadModel, View view);
     }
 
+    public interface OnAsistentesClickListener {
+        void onAsistentesClick(ActividadModel actividadModel);
+    }
+
     public ActividadAdapter(Context context, List<Item> itemList,
                             OnActividadClickListener onActividadClickListener,
                             OnEliminarClickListener onEliminarClickListener,
                             OnEditarClickListener onEditarClickListener,
-                            OnDetallesClickListener onDetallesClickListener) {
+                            OnDetallesClickListener onDetallesClickListener,
+                            OnAsistentesClickListener onAsistentesClickListener) {
         this.itemList = itemList;
         this.onActividadClickListener = onActividadClickListener;
         this.onEliminarClickListener = onEliminarClickListener;
         this.onEditarClickListener = onEditarClickListener;
         this.onDetallesClickListener = onDetallesClickListener;
+        this.onAsistentesClickListener = onAsistentesClickListener;
     }
 
     @Override
@@ -120,11 +132,20 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Item item = itemList.get(position);
         if (holder instanceof ActividadViewHolder) {
-            ((ActividadViewHolder) holder).bind(item.getActividadModel(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
+            ((ActividadViewHolder) holder).bind(item.getActividadModel(),
+                    onActividadClickListener,
+                    onDetallesClickListener,
+                    onEditarClickListener,
+                    onEliminarClickListener,
+                    onAsistentesClickListener);
         } else if (holder instanceof TituloViewHolder) {
             ((TituloViewHolder) holder).bind(item.getTitulo());
         } else if (holder instanceof PasadasViewHolder) {
-            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
+            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(),
+                    onActividadClickListener,
+                    onDetallesClickListener,
+                    onEditarClickListener,
+                    onEliminarClickListener);
         }
     }
 
@@ -157,17 +178,14 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnActividadClickListener onActividadClickListener,
                          OnDetallesClickListener onDetallesClickListener,
                          OnEditarClickListener onEditarClickListener,
-                         OnEliminarClickListener onEliminarClickListener) {
+                         OnEliminarClickListener onEliminarClickListener,
+                         OnAsistentesClickListener onAsistentesClickListener) {
 
-            // Título
             tvTituloActividad.setText(actividadModel.getTitle());
 
             // Imagen
             String imageUrl = actividadModel.getImage();
             if (imageUrl != null && !imageUrl.isEmpty()) {
-                if (!imageUrl.startsWith("http")) {
-                    imageUrl = "http://localhost:3000" + imageUrl; // Cambiar por tu dominio real
-                }
                 Glide.with(itemView.getContext())
                         .load(imageUrl)
                         .placeholder(R.drawable.default_image)
@@ -181,7 +199,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             switchPromocion.setChecked(actividadModel.isPromoted());
             switchPromocion.setEnabled(!actividadModel.isPasada());
 
-            // Acción del Switch para promocionar/despromocionar
             switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (!actividadModel.isPasada()) {
                     String id = actividadModel.getId();
@@ -195,7 +212,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                             .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
 
                     PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
-
                     ApiService apiService = RetrofitClient.getApiService();
                     apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
                         @Override
@@ -242,6 +258,13 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     onEliminarClickListener.onEliminarClick(actividadModel);
                 }
             });
+
+            // Botón "+" Asistentes
+            itemView.findViewById(R.id.layoutAsistentes).setOnClickListener(v -> {
+                if (onAsistentesClickListener != null) {
+                    onAsistentesClickListener.onAsistentesClick(actividadModel);
+                }
+            });
         }
     }
 
@@ -271,7 +294,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnDetallesClickListener onDetallesClickListener,
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener) {
-
             List<Item> items = pasadas.stream()
                     .map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null))
                     .collect(Collectors.toList());
@@ -282,7 +304,8 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     onActividadClickListener,
                     onEliminarClickListener,
                     onEditarClickListener,
-                    onDetallesClickListener
+                    onDetallesClickListener,
+                    null
             );
 
             recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));
