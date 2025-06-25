@@ -37,7 +37,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         public static final int TYPE_ACTIVIDAD = 1;
         public static final int TYPE_TITULO = 2;
         public static final int TYPE_PASADAS = 3;
-
         private final int type;
         private final ActividadModel actividadModel;
         private final String titulo;
@@ -180,7 +179,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnEditarClickListener onEditarClickListener,
                          OnEliminarClickListener onEliminarClickListener,
                          OnAsistentesClickListener onAsistentesClickListener) {
-
             tvTituloActividad.setText(actividadModel.getTitle());
 
             // Imagen
@@ -198,7 +196,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             // Switch Promocionar
             switchPromocion.setChecked(actividadModel.isPromoted());
             switchPromocion.setEnabled(!actividadModel.isPasada());
-
             switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (!actividadModel.isPasada()) {
                     String id = actividadModel.getId();
@@ -206,11 +203,9 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                         Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
                         return;
                     }
-
                     String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
                     String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
                             .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
-
                     PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
                     ApiService apiService = RetrofitClient.getApiService();
                     apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
@@ -259,8 +254,15 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 }
             });
 
-            // Botón "+" Asistentes
+            // Layout Asistentes (Texto)
             itemView.findViewById(R.id.layoutAsistentes).setOnClickListener(v -> {
+                if (onAsistentesClickListener != null) {
+                    onAsistentesClickListener.onAsistentesClick(actividadModel);
+                }
+            });
+
+            // Botón "+" (ImageButton)
+            itemView.findViewById(R.id.btnPlus).setOnClickListener(v -> {
                 if (onAsistentesClickListener != null) {
                     onAsistentesClickListener.onAsistentesClick(actividadModel);
                 }
@@ -297,7 +299,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             List<Item> items = pasadas.stream()
                     .map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null))
                     .collect(Collectors.toList());
-
             ActividadAdapter adapter = new ActividadAdapter(
                     recyclerPasadas.getContext(),
                     items,
@@ -307,7 +308,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     onDetallesClickListener,
                     null
             );
-
             recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));
             recyclerPasadas.setAdapter(adapter);
         }
