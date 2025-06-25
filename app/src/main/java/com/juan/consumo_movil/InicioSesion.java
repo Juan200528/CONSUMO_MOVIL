@@ -93,8 +93,10 @@ public class InicioSesion extends AppCompatActivity {
         tvRegistrarse.setMovementMethod(LinkMovementMethod.getInstance());
         tvRegistrarse.setHighlightColor(Color.TRANSPARENT);
 
+        // Implementación completa: Redirección a RecuperarContraseña
         tvOlvidoContrasena.setOnClickListener(v -> {
-            // Ir a recuperar contraseña si se implementa
+            Intent intent = new Intent(InicioSesion.this, RecuperarContraseña.class);
+            startActivity(intent);
         });
     }
 

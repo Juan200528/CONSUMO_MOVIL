@@ -71,6 +71,10 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true" />
 
+        <!-- Actividad para recuperar contraseña -->
+        <activity
+            android:name=".RecuperarContraseña" />
+
         <!-- Actividad principal -->
         <activity
             android:name=".PantallaPrincipal"
