@@ -35,6 +35,9 @@ import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.model.User;
 import com.juan.consumo_movil.utils.SessionManager;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -42,7 +45,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class Registro extends AppCompatActivity {
-
     private EditText fullNameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private Button btnRegistrar, btnGoogle;
     private SessionManager sessionManager;
@@ -141,15 +143,12 @@ public class Registro extends AppCompatActivity {
                 GradientDrawable.Orientation.LEFT_RIGHT,
                 new int[]{Color.parseColor("#03683E"), Color.parseColor("#064349")});
         gradientDrawableNormal.setCornerRadius(80f);
-
         GradientDrawable gradientDrawablePressed = new GradientDrawable();
         gradientDrawablePressed.setColor(Color.parseColor("#063449"));
         gradientDrawablePressed.setCornerRadius(80f);
-
         StateListDrawable stateListDrawable = new StateListDrawable();
         stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, gradientDrawablePressed);
         stateListDrawable.addState(new int[]{}, gradientDrawableNormal);
-
         btnRegistrar.setBackground(stateListDrawable);
     }
 
@@ -161,7 +160,6 @@ public class Registro extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
         if (requestCode == 9001) {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
@@ -176,7 +174,7 @@ public class Registro extends AppCompatActivity {
     private void loginWithGoogle(String email, String idToken) {
         User user = new User();
         user.setEmail(email);
-        user.setPassword(idToken); // Se usa como token de autenticación en backend
+        user.setPassword(idToken); // Usamos idToken como contraseña temporal
         ApiService apiService = RetrofitClient.getApiService();
         Call<LoginResponse> call = apiService.loginWithGoogle(user);
         call.enqueue(new Callback<LoginResponse>() {
@@ -186,7 +184,7 @@ public class Registro extends AppCompatActivity {
                     LoginResponse loginResponse = response.body();
                     String token = extractTokenFromHeaders(response);
                     if (token == null || token.isEmpty()) {
-                        Toast.makeText(Registro.this, "Error al iniciar sesión automáticamente", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(Registro.this, "Revisa tu correo para verificar tu cuenta.", Toast.LENGTH_LONG).show();
                         return;
                     }
                     sessionManager.guardarToken(token);
@@ -196,13 +194,9 @@ public class Registro extends AppCompatActivity {
                             loginResponse.getEmail(),
                             "N/A"
                     );
-                    Intent intent = new Intent(Registro.this, MenuActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                    finish();
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                    redirigirAMenu();
                 } else {
-                    Toast.makeText(Registro.this, "No se pudo iniciar sesión con Google", Toast.LENGTH_LONG).show();
+                    Toast.makeText(Registro.this, "No se pudo conectar con el servidor.", Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -241,30 +235,35 @@ public class Registro extends AppCompatActivity {
             isRegistering = false;
             return;
         }
+
         if (TextUtils.isEmpty(email)) {
             emailEditText.setError("Ingrese su correo electrónico");
             emailEditText.requestFocus();
             isRegistering = false;
             return;
         }
+
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailEditText.setError("Ingrese un correo válido");
             emailEditText.requestFocus();
             isRegistering = false;
             return;
         }
+
         if (TextUtils.isEmpty(password)) {
             passwordEditText.setError("Ingrese una contraseña");
             passwordEditText.requestFocus();
             isRegistering = false;
             return;
         }
+
         if (password.length() < 6) {
             passwordEditText.setError("La contraseña debe tener al menos 6 caracteres");
             passwordEditText.requestFocus();
             isRegistering = false;
             return;
         }
+
         if (!password.equals(confirmPassword)) {
             confirmPasswordEditText.setError("Las contraseñas no coinciden");
             confirmPasswordEditText.requestFocus();
@@ -286,32 +285,50 @@ public class Registro extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
                     String token = extractTokenFromHeaders(response);
+
                     if (token == null || token.isEmpty()) {
-                        Toast.makeText(Registro.this, "Error al iniciar sesión automáticamente", Toast.LENGTH_SHORT).show();
+                        // Redirigir a la pantalla de verificación pendiente
+                        Intent intent = new Intent(Registro.this, VerificacionPendiente.class);
+                        intent.putExtra("email", email); // Pasar el email al siguiente activity
+                        startActivity(intent);
+                        finish(); // Finalizar Registro
                         return;
                     }
+
+                    // Guardar sesión y redirigir al menú principal
                     sessionManager.guardarToken(token);
                     sessionManager.guardarSesion(
-                            Objects.requireNonNull(loginResponse.getId()).toString(),
+                            loginResponse.getId(),
                             loginResponse.getUsername(),
                             loginResponse.getEmail(),
                             "N/A"
                     );
-                    Intent intent = new Intent(Registro.this, MenuActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                    finish();
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                    redirigirAMenu();
                 } else {
-                    Toast.makeText(Registro.this, "El registro no fue posible. Inténtalo nuevamente.", Toast.LENGTH_LONG).show();
+                    try {
+                        JSONObject jObjError = new JSONObject(response.errorBody().string());
+                        JSONArray messageArray = jObjError.getJSONArray("message");
+                        String errorMessage = messageArray.getString(0);
+                        Toast.makeText(Registro.this, errorMessage, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(Registro.this, "Error desconocido. Inténtalo nuevamente.", Toast.LENGTH_LONG).show();
+                    }
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
                 isRegistering = false;
-                Toast.makeText(Registro.this, "No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.", Toast.LENGTH_LONG).show();
+                Toast.makeText(Registro.this, "No se pudo conectar con el servidor.", Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void redirigirAMenu() {
+        Intent intent = new Intent(Registro.this, MenuActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 }

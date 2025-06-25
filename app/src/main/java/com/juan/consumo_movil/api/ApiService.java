@@ -142,7 +142,7 @@ public interface ApiService {
 
     // 🔁 Reenviar correo de verificación
     @POST("/api/auth/resend-verification")
-    Call<Void> resendVerificationEmail();
+    Call<Void> resendVerificationEmail(@Body User user);
 
     // 🧾 Iniciar sesión con Google
     @POST("/api/auth/google")
