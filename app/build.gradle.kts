@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("com.google.gms.google-services")
+    id("com.google.gms.google-services") // Para Firebase
 }
 
 android {
@@ -26,6 +26,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -55,7 +56,10 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-storage") // Añadido: para usar Storage
+    implementation("com.google.firebase:firebase-storage") // Storage para imágenes
+
+    // Google Sign-In (importante para login con Google)
+    implementation("com.google.android.gms:play-services-auth:20.5.0")
 
     // RecyclerView
     implementation("androidx.recyclerview:recyclerview:1.3.2")

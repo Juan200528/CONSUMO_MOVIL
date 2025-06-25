@@ -1,5 +1,6 @@
 package com.juan.consumo_movil;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -18,10 +19,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.LoginResponse;
@@ -35,16 +43,21 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class InicioSesion extends AppCompatActivity {
+
     private EditText etCorreo, etContrasena;
-    private Button btnIniciarSesion;
+    private Button btnIniciarSesion, btnGoogle;
     private TextView tvRegistrarse, tvOlvidoContrasena;
     private SessionManager sessionManager;
     private boolean isLoggingIn = false;
+
+    // Cliente de Google Sign-In
+    private GoogleSignInClient googleSignInClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_inicio_sesion);
+
         sessionManager = new SessionManager(this);
         RetrofitClient.init(getApplicationContext());
 
@@ -53,30 +66,43 @@ public class InicioSesion extends AppCompatActivity {
             return;
         }
 
+        // Vistas
         etCorreo = findViewById(R.id.etCorreo);
         etContrasena = findViewById(R.id.etContrasena);
         btnIniciarSesion = findViewById(R.id.btnIniciarSesion);
+        btnGoogle = findViewById(R.id.btnGoogle); // Botón de Google
         tvRegistrarse = findViewById(R.id.tvRegistro);
         tvOlvidoContrasena = findViewById(R.id.tvOlvidoContrasena);
 
-        etContrasena.setTransformationMethod(PasswordTransformationMethod.getInstance());
         setupPasswordToggle(etContrasena);
-
         setupLoginButtonWithStateEffect();
+
+        // Configurar Google Sign-In
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+        googleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        // Listeners
         btnIniciarSesion.setOnClickListener(v -> iniciarSesion());
+        btnGoogle.setOnClickListener(v -> signInWithGoogle()); // Acceder con Google
+
+        setupLoginLink();
+        setupForgotPasswordLink();
 
         String emailRegistrado = getIntent().getStringExtra("email_registrado");
         if (emailRegistrado != null) {
             etCorreo.setText(emailRegistrado);
         }
+    }
 
+    private void setupLoginLink() {
         String originalText = "¿No tienes una cuenta? Regístrate";
         SpannableString spannableString = new SpannableString(originalText);
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(View widget) {
-                Intent intent = new Intent(InicioSesion.this, Registro.class);
-                startActivity(intent);
+                startActivity(new Intent(InicioSesion.this, Registro.class));
             }
 
             @Override
@@ -87,20 +113,20 @@ public class InicioSesion extends AppCompatActivity {
             }
         };
         int startIndex = originalText.indexOf("Regístrate");
-        int endIndex = startIndex + "Regístrate".length();
-        spannableString.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannableString.setSpan(clickableSpan, startIndex, startIndex + "Regístrate".length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         tvRegistrarse.setText(spannableString);
         tvRegistrarse.setMovementMethod(LinkMovementMethod.getInstance());
         tvRegistrarse.setHighlightColor(Color.TRANSPARENT);
+    }
 
-        // Implementación completa: Redirección a RecuperarContraseña
+    private void setupForgotPasswordLink() {
         tvOlvidoContrasena.setOnClickListener(v -> {
-            Intent intent = new Intent(InicioSesion.this, RecuperarContraseña.class);
-            startActivity(intent);
+            startActivity(new Intent(InicioSesion.this, RecuperarContraseña.class));
         });
     }
 
     private void setupPasswordToggle(final EditText editText) {
+        editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
         editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
         editText.setCompoundDrawablePadding(10);
         editText.setOnTouchListener((v, event) -> {
@@ -143,6 +169,76 @@ public class InicioSesion extends AppCompatActivity {
         btnIniciarSesion.setBackground(stateListDrawable);
     }
 
+    private void signInWithGoogle() {
+        Intent signInIntent = googleSignInClient.getSignInIntent();
+        startActivityForResult(signInIntent, 9001);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 9001) {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            try {
+                GoogleSignInAccount account = task.getResult(ApiException.class);
+                loginWithGoogle(account.getEmail(), account.getIdToken());
+            } catch (ApiException e) {
+                Toast.makeText(this, "Fallo al iniciar sesión con Google", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void loginWithGoogle(String email, String idToken) {
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(idToken); // Usamos idToken como contraseña temporal
+
+        ApiService apiService = RetrofitClient.getApiService();
+        Call<LoginResponse> call = apiService.loginWithGoogle(user);
+        call.enqueue(new Callback<LoginResponse>() {
+            @Override
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LoginResponse loginResponse = response.body();
+                    String token = extractTokenFromHeaders(response);
+                    if (token == null || token.isEmpty()) {
+                        Toast.makeText(InicioSesion.this, "Error al iniciar sesión automáticamente", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    sessionManager.guardarToken(token);
+                    sessionManager.guardarSesion(
+                            Objects.requireNonNull(loginResponse.getId()).toString(),
+                            loginResponse.getUsername(),
+                            loginResponse.getEmail(),
+                            "N/A"
+                    );
+                    redirigirAMenu();
+                } else {
+                    Toast.makeText(InicioSesion.this, "No se pudo iniciar sesión con Google", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LoginResponse> call, Throwable t) {
+                Toast.makeText(InicioSesion.this, "No se pudo conectar con el servidor.", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private String extractTokenFromHeaders(Response<LoginResponse> response) {
+        for (int i = 0; i < response.headers().size(); i++) {
+            String name = response.headers().name(i);
+            String value = response.headers().value(i);
+            if (name.equalsIgnoreCase("set-cookie") && value.contains("token=")) {
+                int start = value.indexOf("token=") + 6;
+                int end = value.indexOf(';', start);
+                return (end > start) ? value.substring(start, end) : value.substring(start);
+            }
+        }
+        return null;
+    }
+
     private void iniciarSesion() {
         if (isLoggingIn) return;
         isLoggingIn = true;
@@ -156,14 +252,12 @@ public class InicioSesion extends AppCompatActivity {
             isLoggingIn = false;
             return;
         }
-
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etCorreo.setError("Ingrese un correo válido");
             etCorreo.requestFocus();
             isLoggingIn = false;
             return;
         }
-
         if (TextUtils.isEmpty(password)) {
             etContrasena.setError("Ingrese una contraseña");
             etContrasena.requestFocus();
@@ -177,27 +271,15 @@ public class InicioSesion extends AppCompatActivity {
 
         ApiService apiService = RetrofitClient.getApiService();
         Call<LoginResponse> call = apiService.login(user);
-
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 isLoggingIn = false;
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
-                    String tokenCookie = null;
-
-                    for (int i = 0; i < response.headers().size(); i++) {
-                        String name = response.headers().name(i);
-                        String value = response.headers().value(i);
-                        if (name.equalsIgnoreCase("set-cookie") && value.contains("token=")) {
-                            int start = value.indexOf("token=") + 6;
-                            int end = value.indexOf(';', start);
-                            tokenCookie = (end > start) ? value.substring(start, end) : value.substring(start);
-                            break;
-                        }
-                    }
-
+                    String tokenCookie = extractTokenFromHeaders(response);
                     if (tokenCookie == null || tokenCookie.isEmpty()) {
+                        Toast.makeText(InicioSesion.this, "Error al iniciar sesión automáticamente", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -211,13 +293,14 @@ public class InicioSesion extends AppCompatActivity {
 
                     redirigirAMenu();
                 } else {
-                    // Credenciales incorrectas
+                    Toast.makeText(InicioSesion.this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
                 isLoggingIn = false;
+                Toast.makeText(InicioSesion.this, "Error de conexión", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -227,5 +310,6 @@ public class InicioSesion extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 }

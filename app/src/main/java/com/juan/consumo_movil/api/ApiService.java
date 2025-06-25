@@ -3,7 +3,7 @@ package com.juan.consumo_movil.api;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.model.LoginResponse;
-import com.juan.consumo_movil.models.ResetPasswordRequest; // 👈 Nuevo modelo importado
+import com.juan.consumo_movil.models.ResetPasswordRequest;
 import com.juan.consumo_movil.model.User;
 import com.juan.consumo_movil.models.PromotionRequest;
 
@@ -89,7 +89,6 @@ public interface ApiService {
             @Path("id") String id
     );
 
-
     // 📈 Obtener actividades promocionadas
     @GET("api/tasks/promoted")
     Call<List<ActividadModel>> getPromotedTasks();
@@ -137,7 +136,17 @@ public interface ApiService {
             @Header("Authorization") String token
     );
 
-    // 🔁 Enviar correo de recuperación de contraseña 👇 NUEVO MÉTODO AÑADIDO
+    // 🔁 Enviar correo de recuperación de contraseña
     @POST("/api/auth/password-reset")
     Call<Void> sendPasswordResetEmail(@Body ResetPasswordRequest request);
+
+    // 🔁 Reenviar correo de verificación
+    @POST("/api/auth/resend-verification")
+    Call<Void> resendVerificationEmail();
+
+    // 🧾 Iniciar sesión con Google
+    @POST("/api/auth/google")
+    Call<LoginResponse> loginWithGoogle(
+            @Body User user
+    );
 }

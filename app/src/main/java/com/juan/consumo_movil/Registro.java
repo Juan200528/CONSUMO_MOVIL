@@ -23,6 +23,12 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.LoginResponse;
@@ -36,24 +42,48 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class Registro extends AppCompatActivity {
+
     private EditText fullNameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
-    private Button btnRegistrar;
+    private Button btnRegistrar, btnGoogle;
     private SessionManager sessionManager;
     private boolean isRegistering = false;
+
+    // Cliente de Google Sign-In
+    private GoogleSignInClient googleSignInClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_registro);
+
         RetrofitClient.init(getApplicationContext());
 
+        // Inicializar vistas
         fullNameEditText = findViewById(R.id.fullNameEditText);
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
         confirmPasswordEditText = findViewById(R.id.confirmPasswordEditText);
         btnRegistrar = findViewById(R.id.btnRegistrar);
+        btnGoogle = findViewById(R.id.btnGoogle);
+
         sessionManager = new SessionManager(this);
 
+        setupLoginLink();
+        setupPasswordField(passwordEditText);
+        setupPasswordField(confirmPasswordEditText);
+        setupRegisterButtonWithStateEffect();
+
+        // Configurar Google Sign-In
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .build();
+        googleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        btnRegistrar.setOnClickListener(v -> registrarUsuario());
+        btnGoogle.setOnClickListener(v -> signInWithGoogle());
+    }
+
+    private void setupLoginLink() {
         TextView loginLinkTextView = findViewById(R.id.loginLinkTextView);
         String originalText = "¿Ya tienes cuenta? Entrar";
         SpannableString spannableString = new SpannableString(originalText);
@@ -63,7 +93,6 @@ public class Registro extends AppCompatActivity {
                 Intent intent = new Intent(Registro.this, InicioSesion.class);
                 startActivity(intent);
             }
-
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
                 super.updateDrawState(ds);
@@ -77,12 +106,6 @@ public class Registro extends AppCompatActivity {
         loginLinkTextView.setText(spannableString);
         loginLinkTextView.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
         loginLinkTextView.setHighlightColor(Color.TRANSPARENT);
-
-        setupPasswordField(passwordEditText);
-        setupPasswordField(confirmPasswordEditText);
-
-        setupRegisterButtonWithStateEffect();
-        btnRegistrar.setOnClickListener(v -> registrarUsuario());
     }
 
     private void setupPasswordField(EditText editText) {
@@ -91,21 +114,22 @@ public class Registro extends AppCompatActivity {
         editText.setCompoundDrawablePadding(10);
         editText.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
-            int drawableRightStart = editText.getRight()
-                    - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
-                    - editText.getCompoundDrawablePadding();
+            EditText edit = (EditText) v;
+            int drawableRightStart = edit.getRight()
+                    - edit.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
+                    - edit.getCompoundDrawablePadding();
             if (event.getAction() == MotionEvent.ACTION_DOWN ||
                     event.getAction() == MotionEvent.ACTION_MOVE) {
                 if (event.getRawX() >= drawableRightStart) {
-                    editText.setTransformationMethod(null);
-                    editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
+                    edit.setTransformationMethod(null);
+                    edit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
                     return true;
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP ||
                     event.getAction() == MotionEvent.ACTION_CANCEL) {
-                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
-                editText.setSelection(editText.getText().length());
+                edit.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                edit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
+                edit.setSelection(edit.getText().length());
                 return true;
             }
             return false;
@@ -129,6 +153,79 @@ public class Registro extends AppCompatActivity {
         btnRegistrar.setBackground(stateListDrawable);
     }
 
+    private void signInWithGoogle() {
+        Intent signInIntent = googleSignInClient.getSignInIntent();
+        startActivityForResult(signInIntent, 9001);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 9001) {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            try {
+                GoogleSignInAccount account = task.getResult(ApiException.class);
+                loginWithGoogle(account.getEmail(), account.getIdToken());
+            } catch (ApiException e) {
+                Toast.makeText(this, "Fallo al iniciar sesión con Google", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void loginWithGoogle(String email, String idToken) {
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(idToken); // Se usa como token de autenticación en backend
+        ApiService apiService = RetrofitClient.getApiService();
+        Call<LoginResponse> call = apiService.loginWithGoogle(user);
+        call.enqueue(new Callback<LoginResponse>() {
+            @Override
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LoginResponse loginResponse = response.body();
+                    String token = extractTokenFromHeaders(response);
+                    if (token == null || token.isEmpty()) {
+                        Toast.makeText(Registro.this, "Error al iniciar sesión automáticamente", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    sessionManager.guardarToken(token);
+                    sessionManager.guardarSesion(
+                            Objects.requireNonNull(loginResponse.getId()).toString(),
+                            loginResponse.getUsername(),
+                            loginResponse.getEmail(),
+                            "N/A"
+                    );
+                    Intent intent = new Intent(Registro.this, MenuActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                } else {
+                    Toast.makeText(Registro.this, "No se pudo iniciar sesión con Google", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LoginResponse> call, Throwable t) {
+                Toast.makeText(Registro.this, "No se pudo conectar con el servidor.", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private String extractTokenFromHeaders(Response<LoginResponse> response) {
+        for (int i = 0; i < response.headers().size(); i++) {
+            String name = response.headers().name(i);
+            String value = response.headers().value(i);
+            if (name.equalsIgnoreCase("set-cookie") && value.contains("token=")) {
+                int start = value.indexOf("token=") + 6;
+                int end = value.indexOf(';', start);
+                return (end > start) ? value.substring(start, end) : value.substring(start);
+            }
+        }
+        return null;
+    }
+
     private void registrarUsuario() {
         if (isRegistering) return;
         isRegistering = true;
@@ -138,42 +235,36 @@ public class Registro extends AppCompatActivity {
         String password = passwordEditText.getText().toString().trim();
         String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
-        // Validaciones básicas
         if (TextUtils.isEmpty(nombreCompleto)) {
             fullNameEditText.setError("Ingrese su nombre completo");
             fullNameEditText.requestFocus();
             isRegistering = false;
             return;
         }
-
         if (TextUtils.isEmpty(email)) {
             emailEditText.setError("Ingrese su correo electrónico");
             emailEditText.requestFocus();
             isRegistering = false;
             return;
         }
-
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             emailEditText.setError("Ingrese un correo válido");
             emailEditText.requestFocus();
             isRegistering = false;
             return;
         }
-
         if (TextUtils.isEmpty(password)) {
             passwordEditText.setError("Ingrese una contraseña");
             passwordEditText.requestFocus();
             isRegistering = false;
             return;
         }
-
         if (password.length() < 6) {
             passwordEditText.setError("La contraseña debe tener al menos 6 caracteres");
             passwordEditText.requestFocus();
             isRegistering = false;
             return;
         }
-
         if (!password.equals(confirmPassword)) {
             confirmPasswordEditText.setError("Las contraseñas no coinciden");
             confirmPasswordEditText.requestFocus();
@@ -188,49 +279,29 @@ public class Registro extends AppCompatActivity {
 
         ApiService apiService = RetrofitClient.getApiService();
         Call<LoginResponse> call = apiService.register(user);
-
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 isRegistering = false;
-
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
-
-                    // Buscar token en headers
-                    String tokenCookie = null;
-                    for (int i = 0; i < response.headers().size(); i++) {
-                        String name = response.headers().name(i);
-                        String value = response.headers().value(i);
-                        if (name.equalsIgnoreCase("set-cookie") && value.contains("token=")) {
-                            int start = value.indexOf("token=") + 6;
-                            int end = value.indexOf(';', start);
-                            tokenCookie = (end > start) ? value.substring(start, end) : value.substring(start);
-                            break;
-                        }
-                    }
-
-                    if (tokenCookie == null || tokenCookie.isEmpty()) {
+                    String token = extractTokenFromHeaders(response);
+                    if (token == null || token.isEmpty()) {
                         Toast.makeText(Registro.this, "Error al iniciar sesión automáticamente", Toast.LENGTH_SHORT).show();
                         return;
                     }
-
-                    // Guardar sesión
-                    sessionManager.guardarToken(tokenCookie);
+                    sessionManager.guardarToken(token);
                     sessionManager.guardarSesion(
                             Objects.requireNonNull(loginResponse.getId()).toString(),
                             loginResponse.getUsername(),
                             loginResponse.getEmail(),
                             "N/A"
                     );
-
-                    // Navegación rápida y sin retrasos
                     Intent intent = new Intent(Registro.this, MenuActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                     finish();
                     overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-
                 } else {
                     Toast.makeText(Registro.this, "El registro no fue posible. Inténtalo nuevamente.", Toast.LENGTH_LONG).show();
                 }
