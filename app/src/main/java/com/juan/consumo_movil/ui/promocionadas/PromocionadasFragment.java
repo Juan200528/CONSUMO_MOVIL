@@ -1,9 +1,17 @@
 package com.juan.consumo_movil.ui.promocionadas;
 
+import android.app.Dialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -11,15 +19,15 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
-import com.juan.consumo_movil.models.ActividadAdapter;
+import com.juan.consumo_movil.ui.promocionadas.PromocionadasAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -28,7 +36,11 @@ import retrofit2.Response;
 public class PromocionadasFragment extends Fragment {
 
     private RecyclerView recyclerView;
-    private ActividadAdapter adapter;
+    private PromocionadasAdapter adapter;
+
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable refreshRunnable;
+    private static final long REFRESH_INTERVAL = 60000; // 60 segundos
 
     @Nullable
     @Override
@@ -36,52 +48,122 @@ public class PromocionadasFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_promocionadas, container, false);
 
+        // Inicializar RecyclerView
         recyclerView = view.findViewById(R.id.recyclerPromocionadas);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerView.setHasFixedSize(true);
 
-        // Inicializar adapter con lista vacía por ahora
-        adapter = new ActividadAdapter(
-                getContext(),
-                new ArrayList<>(),
-                actividad -> {}, // onActividadClickListener
-                actividad -> {}, // onEliminarClickListener
-                actividad -> {}, // onEditarClickListener
-                (actividadModel, v) -> {} // onDetallesClickListener
-        );
+        // Inicializar adaptador con lista vacía y listener de detalles
+        adapter = new PromocionadasAdapter(new ArrayList<>(), this::mostrarDialogoDetalles);
         recyclerView.setAdapter(adapter);
-
-        cargarActividadesPromocionadas();
 
         return view;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Cargar datos iniciales
+        cargarActividadesPromocionadas();
+
+        // Programar recarga periódica
+        refreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                cargarActividadesPromocionadas();
+                handler.postDelayed(this, REFRESH_INTERVAL); // Volver a programar
+            }
+        };
+
+        handler.postDelayed(refreshRunnable, REFRESH_INTERVAL);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Detener actualizaciones automáticas al destruir la vista
+        handler.removeCallbacks(refreshRunnable);
+    }
+
+    /**
+     * Método que llama a la API para obtener las actividades promocionadas
+     */
     private void cargarActividadesPromocionadas() {
         ApiService apiService = RetrofitClient.getApiService();
-        Call<List<ActividadModel>> call = apiService.getPromotedTasks();
+        Call<List<ActividadModel>> call = apiService.getPromotedTasks(); // Asegúrate que este método exista
 
         call.enqueue(new Callback<List<ActividadModel>>() {
             @Override
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<ActividadModel> actividades = response.body();
-
-                    List<ActividadAdapter.Item> items = actividades.stream()
-                            .map(actividad -> new ActividadAdapter.Item(
-                                    ActividadAdapter.Item.TYPE_ACTIVIDAD,
-                                    actividad,
-                                    null,
-                                    null
-                            ))
-                            .collect(Collectors.toList());
-
-                    adapter.updateItems(items);
+                    // Actualizar el adaptador con la lista obtenida
+                    adapter.updateList(response.body());
                 }
             }
 
             @Override
             public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
-                t.printStackTrace();
+                // No mostramos error de red ni mensajes técnicos
             }
         });
+    }
+
+    /**
+     * Muestra un diálogo con los detalles de la actividad seleccionada
+     *
+     * @param actividad El modelo de la actividad seleccionada
+     */
+    private void mostrarDialogoDetalles(ActividadModel actividad) {
+        Dialog dialog = new Dialog(requireContext());
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE); // Sin título
+        dialog.setContentView(R.layout.dialogo_detalle_actividad);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); // Fondo transparente
+
+        // Ajustar tamaño del diálogo (80% del ancho de pantalla)
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(dialog.getWindow().getAttributes());
+        lp.width = (int) (requireContext().getResources().getDisplayMetrics().widthPixels * 0.8f);
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        dialog.getWindow().setAttributes(lp);
+
+        // Vincular vistas del diálogo
+        TextView tvTituloDetalle = dialog.findViewById(R.id.tvTituloDetalle);
+        TextView tvDescripcionDetalle = dialog.findViewById(R.id.tvDescripcionDetalle);
+        TextView tvFechaDetalle = dialog.findViewById(R.id.tvFechaDetalle);
+        TextView tvLugarDetalle = dialog.findViewById(R.id.tvLugarDetalle);
+        TextView tvResponsablesDetalle = dialog.findViewById(R.id.tvResponsablesDetalle);
+        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle);
+        Button btnVolver = dialog.findViewById(R.id.btnVolver);
+
+        // Asignar valores desde el modelo
+        tvTituloDetalle.setText(actividad.getTitle());
+        tvDescripcionDetalle.setText(actividad.getDescription());
+        tvFechaDetalle.setText(actividad.getDate());
+        tvLugarDetalle.setText(actividad.getPlace());
+
+        if (actividad.getResponsible() != null && !actividad.getResponsible().isEmpty()) {
+            tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
+        } else {
+            tvResponsablesDetalle.setText("Sin responsables");
+        }
+
+        // Cargar imagen con Glide
+        String imageUrl = actividad.getImage(); // Viene del modelo
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            Glide.with(requireContext())
+                    .load(imageUrl)
+                    .placeholder(R.drawable.default_image) // opcional
+                    .into(ivImagenDetalle);
+            ivImagenDetalle.setVisibility(View.VISIBLE);
+        } else {
+            ivImagenDetalle.setVisibility(View.GONE);
+        }
+
+        // Botón para cerrar el diálogo
+        btnVolver.setOnClickListener(v -> dialog.dismiss());
+
+        // Mostrar el diálogo
+        dialog.show();
     }
 }

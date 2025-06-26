@@ -1,27 +1,26 @@
 package com.juan.consumo_movil.models;
 
 public class Actividad {
-    private int id;
+
+    private String id; // Cambiado de int a String
     private String titulo;
     private String descripcion;
-    private String fecha;
     private String lugar;
-    private String idCreador;
+    private String fecha;
     private String responsables;
-    private String estado;
-    private String imagenRuta;
     private boolean promocionada;
-    private boolean asistido;
     private boolean pasada;
+    private boolean asistido;
+    private String idCreador;
+    private String imagenRuta;
 
-    // ✅ Campo agregado para saber si la actividad es mía
-    private boolean esMia;
+    // --- Getters y Setters ---
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -41,14 +40,6 @@ public class Actividad {
         this.descripcion = descripcion;
     }
 
-    public String getFecha() {
-        return fecha;
-    }
-
-    public void setFecha(String fecha) {
-        this.fecha = fecha;
-    }
-
     public String getLugar() {
         return lugar;
     }
@@ -57,12 +48,12 @@ public class Actividad {
         this.lugar = lugar;
     }
 
-    public String getIdCreador() {
-        return idCreador;
+    public String getFecha() {
+        return fecha;
     }
 
-    public void setIdCreador(String idCreador) {
-        this.idCreador = idCreador;
+    public void setFecha(String fecha) {
+        this.fecha = fecha;
     }
 
     public String getResponsables() {
@@ -73,36 +64,12 @@ public class Actividad {
         this.responsables = responsables;
     }
 
-    public String getEstado() {
-        return estado;
-    }
-
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
-
-    public String getImagenRuta() {
-        return imagenRuta;
-    }
-
-    public void setImagenRuta(String imagenRuta) {
-        this.imagenRuta = imagenRuta;
-    }
-
     public boolean isPromocionada() {
         return promocionada;
     }
 
     public void setPromocionada(boolean promocionada) {
         this.promocionada = promocionada;
-    }
-
-    public boolean isAsistido() {
-        return asistido;
-    }
-
-    public void setAsistido(boolean asistido) {
-        this.asistido = asistido;
     }
 
     public boolean isPasada() {
@@ -113,5 +80,27 @@ public class Actividad {
         this.pasada = pasada;
     }
 
+    public boolean isAsistido() {
+        return asistido;
+    }
 
+    public void setAsistido(boolean asistido) {
+        this.asistido = asistido;
+    }
+
+    public String getIdCreador() {
+        return idCreador;
+    }
+
+    public void setIdCreador(String idCreador) {
+        this.idCreador = idCreador;
+    }
+
+    public String getImagenRuta() {
+        return imagenRuta;
+    }
+
+    public void setImagenRuta(String imagenRuta) {
+        this.imagenRuta = imagenRuta;
+    }
 }

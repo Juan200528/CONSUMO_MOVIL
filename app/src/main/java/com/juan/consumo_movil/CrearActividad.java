@@ -2,32 +2,32 @@ package com.juan.consumo_movil;
 
 import android.Manifest;
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.gson.Gson;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
-import com.juan.consumo_movil.models.CrearActividadRequest;
+import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.utils.SessionManager;
 
 import java.io.File;
@@ -35,60 +35,67 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.UUID;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 
 public class CrearActividad extends AppCompatActivity {
-
     private static final int PICK_IMAGE = 1;
     private static final int PERM_REQ = 100;
 
     private EditText etTitulo, etDesc, etFecha, etLugar, etResp;
-    private ImageButton btnSubir, btnDate;
     private ImageView ivImg;
     private File imgFile;
     private ApiService api;
     private SessionManager sessionManager;
+    private Button btnCrear;
+    private FrameLayout flImagenContenedor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_crear_actividad);
 
-        // Inicializar servicios y componentes
-        api = RetrofitClient.getApiService();
-        sessionManager = new SessionManager(this);
-
+        // Inicialización de vistas
         etTitulo = findViewById(R.id.etTitulo);
         etDesc = findViewById(R.id.etDescripcion);
         etFecha = findViewById(R.id.etFecha);
         etLugar = findViewById(R.id.etLugar);
         etResp = findViewById(R.id.etResponsables);
-        btnSubir = findViewById(R.id.btnSubir);
-        btnDate = findViewById(R.id.btnCalendario);
         ivImg = findViewById(R.id.ivActividadImagen);
+        flImagenContenedor = findViewById(R.id.flImagenContenedor);
+        btnCrear = findViewById(R.id.btnCrear);
 
-        setupButtonWithStateEffect();
+        api = RetrofitClient.getApiService();
+        sessionManager = new SessionManager(this);
 
-        btnDate.setOnClickListener(v -> showDatePicker());
-        btnSubir.setOnClickListener(v -> pickImage());
+        // Configurar botón "Crear"
+        setupCreateButtonWithStateEffect();
 
-        findViewById(R.id.btnCrear).setOnClickListener(v -> upload());
+        // Configurar listeners
+        flImagenContenedor.setOnClickListener(v -> pickImage());
+        etFecha.setFocusable(false); // Evitar edición manual
+        etFecha.setOnClickListener(v -> showDatePicker());
+
+        // ✅ Listener del botón del calendario
+        findViewById(R.id.btnCalendario).setOnClickListener(v -> showDatePicker());
+
+        btnCrear.setOnClickListener(v -> upload());
     }
 
-    private void setupButtonWithStateEffect() {
+    private void setupCreateButtonWithStateEffect() {
         GradientDrawable gradientDrawableNormal = new GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
                 new int[]{Color.parseColor("#03683E"), Color.parseColor("#064349")});
@@ -102,28 +109,55 @@ public class CrearActividad extends AppCompatActivity {
         stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, gradientDrawablePressed);
         stateListDrawable.addState(new int[]{}, gradientDrawableNormal);
 
-        findViewById(R.id.btnCrear).setBackground(stateListDrawable);
-    }
-
-    private void showToastAndLog(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-        Log.e("CrearActividad", message);
+        btnCrear.setBackground(stateListDrawable);
     }
 
     private void showDatePicker() {
         Calendar c = Calendar.getInstance();
-        new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            etFecha.setText(String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth));
-        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+
+        // Usamos ContextThemeWrapper para aplicar el estilo dinámico
+        ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(this, R.style.DatePickerTheme_Custom);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                contextThemeWrapper,
+                (view, year, month, dayOfMonth) -> {
+                    String selectedDate = String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month + 1, dayOfMonth);
+                    etFecha.setText(selectedDate);
+                },
+                c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)
+        );
+
+        // Cambiar color de los botones positivo/negativo
+        datePickerDialog.setOnShowListener(dialogInterface -> {
+            try {
+                DatePickerDialog d = (DatePickerDialog) dialogInterface;
+                d.getButton(DatePickerDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#FF4CAF50"));
+                d.getButton(DatePickerDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#FF4CAF50"));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        datePickerDialog.show();
+    }
+
+    private boolean storagePerm() {
+        String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? Manifest.permission.READ_MEDIA_IMAGES
+                : Manifest.permission.READ_EXTERNAL_STORAGE;
+        return ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED;
     }
 
     private void pickImage() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
-        intent.setType("image/*");
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(Intent.createChooser(intent, "Selecciona una imagen"), PICK_IMAGE);
+        if (!storagePerm()) {
+            String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    ? Manifest.permission.READ_MEDIA_IMAGES
+                    : Manifest.permission.READ_EXTERNAL_STORAGE;
+            ActivityCompat.requestPermissions(this, new String[]{perm}, PERM_REQ);
         } else {
-            Toast.makeText(this, "No hay aplicaciones disponibles para seleccionar imágenes", Toast.LENGTH_SHORT).show();
+            Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            i.setType("image/*");
+            startActivityForResult(i, PICK_IMAGE);
         }
     }
 
@@ -134,9 +168,16 @@ public class CrearActividad extends AppCompatActivity {
             Uri uri = data.getData();
             ivImg.setImageURI(uri);
             imgFile = uriToFile(uri);
-            if (imgFile == null) {
-                showToastAndLog("No se pudo procesar la imagen seleccionada");
-            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERM_REQ && grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            pickImage();
         }
     }
 
@@ -153,7 +194,6 @@ public class CrearActividad extends AppCompatActivity {
             }
             return tmp;
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }
@@ -163,98 +203,95 @@ public class CrearActividad extends AppCompatActivity {
         String descripcion = etDesc.getText().toString().trim();
         String fecha = etFecha.getText().toString().trim();
         String lugar = etLugar.getText().toString().trim();
-        String responsable = etResp.getText().toString().trim();
+        String responsablesStr = etResp.getText().toString().trim();
 
         if (TextUtils.isEmpty(titulo) || TextUtils.isEmpty(fecha) || TextUtils.isEmpty(lugar)) {
-            showToastAndLog("Título, fecha y lugar son obligatorios");
+            Toast.makeText(this, "Título, fecha y lugar son obligatorios", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        try {
+            Date inputDate = sdf.parse(fecha);
+            Calendar today = Calendar.getInstance();
+            today.set(Calendar.HOUR_OF_DAY, 0);
+            today.set(Calendar.MINUTE, 0);
+            today.set(Calendar.SECOND, 0);
+            today.set(Calendar.MILLISECOND, 0);
+            if (inputDate.before(today.getTime())) {
+                Toast.makeText(this, "No puedes seleccionar una fecha anterior a hoy", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        } catch (ParseException e) {
+            Toast.makeText(this, "Formato de fecha inválido", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String token = sessionManager.getToken();
         if (token == null || token.isEmpty()) {
-            showToastAndLog("Token de autenticación faltante. Por favor inicia sesión.");
+            Toast.makeText(this, "Inicie sesión nuevamente.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String fechaISO = formatDateForBackend(fecha);
-        if (fechaISO == null) {
-            showToastAndLog("Fecha inválida. Usa el formato correcto (yyyy-MM-dd)");
-            return;
+        RequestBody titleBody = createRequestBody(titulo);
+        RequestBody descBody = createRequestBody(descripcion);
+        RequestBody dateBody = createRequestBody(formatDateForBackend(fecha));
+        RequestBody placeBody = createRequestBody(lugar);
+        RequestBody responsableBody = !TextUtils.isEmpty(responsablesStr) ? createRequestBody(responsablesStr) : null;
+
+        MultipartBody.Part imagePart = null;
+        if (imgFile != null && imgFile.exists()) {
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), imgFile);
+            imagePart = MultipartBody.Part.createFormData("image", imgFile.getName(), requestFile);
         }
 
-        CrearActividadRequest request = new CrearActividadRequest(
-                titulo,
-                descripcion,
-                lugar,
-                fechaISO,
-                responsable,
-                false
+        Call<ActividadModel> call = api.crearActividadConImagen(
+                "Bearer " + token,
+                titleBody,
+                descBody,
+                dateBody,
+                placeBody,
+                responsableBody,
+                imagePart
         );
 
-        Call<com.juan.consumo_movil.model.ActividadModel> call = api.crearActividad("Bearer " + token, request);
-        call.enqueue(new Callback<com.juan.consumo_movil.model.ActividadModel>() {
+        call.enqueue(new Callback<ActividadModel>() {
             @Override
-            public void onResponse(Call<com.juan.consumo_movil.model.ActividadModel> call, Response<com.juan.consumo_movil.model.ActividadModel> response) {
+            public void onResponse(Call<ActividadModel> call, Response<ActividadModel> response) {
                 cleanupTempFile();
                 if (response.isSuccessful()) {
-                    showToastAndLog("✅ Actividad creada exitosamente");
                     finish();
-                } else {
-                    handleErrorResponse(response);
+                    Toast.makeText(CrearActividad.this, "Actividad creada exitosamente", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<com.juan.consumo_movil.model.ActividadModel> call, Throwable t) {
+            public void onFailure(Call<ActividadModel> call, Throwable t) {
                 cleanupTempFile();
-                showToastAndLog("⚠️ Error de conexión: " + t.getMessage());
+                Toast.makeText(CrearActividad.this, "Error al crear la actividad. Inténtalo más tarde.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private RequestBody createRequestBody(String value) {
+        return RequestBody.create(MediaType.parse("text/plain"), value);
     }
 
     private String formatDateForBackend(String dateStr) {
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-            outputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            outputFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
             Date date = inputFormat.parse(dateStr);
             return outputFormat.format(date);
         } catch (ParseException e) {
-            return null;
+            return dateStr + "T00:00:00.000Z";
         }
     }
 
     private void cleanupTempFile() {
         if (imgFile != null && imgFile.exists()) {
-            boolean deleted = imgFile.delete();
-            if (!deleted) {
-                Log.w("CrearActividad", "No se pudo eliminar archivo temporal: " + imgFile.getAbsolutePath());
-            }
-        }
-    }
-
-    private void handleErrorResponse(Response<?> response) {
-        try {
-            if (response.errorBody() != null) {
-                String errorBody = response.errorBody().string();
-                switch (response.code()) {
-                    case 400:
-                        showToastAndLog("Datos inválidos. Revisa los campos.");
-                        break;
-                    case 401:
-                        showToastAndLog("No autorizado. Inicia sesión nuevamente.");
-                        break;
-                    case 500:
-                        showToastAndLog("Error del servidor. Intenta más tarde.");
-                        break;
-                    default:
-                        showToastAndLog("Error: " + errorBody);
-                }
-            } else {
-                showToastAndLog("Error desconocido del servidor");
-            }
-        } catch (Exception e) {
-            showToastAndLog("Error procesando respuesta del servidor");
+            imgFile.delete();
         }
     }
 }

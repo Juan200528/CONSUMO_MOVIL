@@ -11,6 +11,8 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class PantallaPrincipal extends AppCompatActivity {
 
     TextView PanasCoop;
@@ -21,6 +23,9 @@ public class PantallaPrincipal extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pantalla_principal);
+
+        // Iniciar sesión anónima en Firebase (sin mostrar logs)
+        FirebaseAuth.getInstance().signInAnonymously();
 
         // Título
         PanasCoop = findViewById(R.id.PanasCoop);
@@ -39,7 +44,7 @@ public class PantallaPrincipal extends AppCompatActivity {
         // Crear GradientDrawable para el estado normal (degradado)
         GradientDrawable gradientDrawableNormal = new GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[] { Color.parseColor("#03683E"), Color.parseColor("#064349") });
+                new int[]{Color.parseColor("#03683E"), Color.parseColor("#064349")});
         gradientDrawableNormal.setCornerRadius(80f);
 
         // Crear GradientDrawable para el estado presionado (color sólido)
@@ -49,28 +54,22 @@ public class PantallaPrincipal extends AppCompatActivity {
 
         // Configurar StateListDrawable para los estados del botón
         StateListDrawable stateListDrawable = new StateListDrawable();
-        stateListDrawable.addState(new int[] { android.R.attr.state_pressed }, gradientDrawablePressed);
-        stateListDrawable.addState(new int[] {}, gradientDrawableNormal);
+        stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, gradientDrawablePressed);
+        stateListDrawable.addState(new int[]{}, gradientDrawableNormal);
 
         // Aplicar el StateListDrawable al botón de Registrar
         btnRegister.setBackground(stateListDrawable);
 
-        // Configurar el listener para el botón de Registro
-        btnRegister.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(PantallaPrincipal.this, Registro.class);
-                startActivity(intent);
-            }
+        // Listener para el botón de Registro
+        btnRegister.setOnClickListener(v -> {
+            Intent intent = new Intent(PantallaPrincipal.this, Registro.class);
+            startActivity(intent);
         });
 
-        // Configurar el listener para el botón de Iniciar Sesión
-        btnLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(PantallaPrincipal.this, InicioSesion.class);
-                startActivity(intent);
-            }
+        // Listener para el botón de Iniciar Sesión
+        btnLogin.setOnClickListener(v -> {
+            Intent intent = new Intent(PantallaPrincipal.this, InicioSesion.class);
+            startActivity(intent);
         });
     }
 }

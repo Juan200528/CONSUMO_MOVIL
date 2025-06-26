@@ -42,9 +42,9 @@
             android:rowOrderPreserved="false"
             android:useDefaultMargins="true">
 
-            <!-- Botón 1 -->
+            <!-- Botón Gestionar Asistentes -->
             <androidx.cardview.widget.CardView
-                android:id="@+id/card_buscar_filtrar"
+                android:id="@+id/card_gestion_asistentes"
                 android:layout_width="0dp"
                 android:layout_height="200dp"
                 android:layout_margin="12dp"
@@ -57,30 +57,32 @@
                 android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
-                    android:id="@+id/miBotton"
+                    android:id="@+id/miBotton1"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-
                     android:background="@drawable/selector_boton"
                     android:elevation="6dp"
                     android:padding="16dp">
 
-
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/ic_asistentes"/>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="BUSCAR Y FILTRAR\nACTIVIDADES"
+                        android:text="GESTIONAR\nASISTENTES"
                         android:textAlignment="center"
                         android:textColor="#000000"
                         android:textSize="13sp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Botón 2 -->
+            <!-- Botón Lista Actividades -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_lista_actividades"
                 android:layout_width="0dp"
@@ -100,7 +102,6 @@
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-
                     android:background="@drawable/selector_boton"
                     android:elevation="6dp"
                     android:padding="16dp">
@@ -121,7 +122,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Botón 3 -->
+            <!-- Botón Actividades Promocionadas -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_actividades_promocionadas"
                 android:layout_width="0dp"
@@ -163,7 +164,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Botón 4 -->
+            <!-- Botón Recordatorio -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_recordatorio"
                 android:layout_width="0dp"

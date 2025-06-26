@@ -1,7 +1,6 @@
 package com.juan.consumo_movil.models;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,10 +13,12 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.ApiService;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
+import com.juan.consumo_movil.models.PromotionRequest;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -36,7 +37,6 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         public static final int TYPE_ACTIVIDAD = 1;
         public static final int TYPE_TITULO = 2;
         public static final int TYPE_PASADAS = 3;
-
         private final int type;
         private final ActividadModel actividadModel;
         private final String titulo;
@@ -71,6 +71,7 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     private OnEliminarClickListener onEliminarClickListener;
     private OnEditarClickListener onEditarClickListener;
     private OnDetallesClickListener onDetallesClickListener;
+    private OnAsistentesClickListener onAsistentesClickListener;
 
     public interface OnActividadClickListener {
         void onActividadClick(ActividadModel actividadModel);
@@ -84,21 +85,26 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         void onEditarClick(ActividadModel actividadModel);
     }
 
-    // ✅ Interfaz actualizada para recibir ambos parámetros
     public interface OnDetallesClickListener {
         void onDetallesClick(ActividadModel actividadModel, View view);
+    }
+
+    public interface OnAsistentesClickListener {
+        void onAsistentesClick(ActividadModel actividadModel);
     }
 
     public ActividadAdapter(Context context, List<Item> itemList,
                             OnActividadClickListener onActividadClickListener,
                             OnEliminarClickListener onEliminarClickListener,
                             OnEditarClickListener onEditarClickListener,
-                            OnDetallesClickListener onDetallesClickListener) {
+                            OnDetallesClickListener onDetallesClickListener,
+                            OnAsistentesClickListener onAsistentesClickListener) {
         this.itemList = itemList;
         this.onActividadClickListener = onActividadClickListener;
         this.onEliminarClickListener = onEliminarClickListener;
         this.onEditarClickListener = onEditarClickListener;
         this.onDetallesClickListener = onDetallesClickListener;
+        this.onAsistentesClickListener = onAsistentesClickListener;
     }
 
     @Override
@@ -125,11 +131,20 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Item item = itemList.get(position);
         if (holder instanceof ActividadViewHolder) {
-            ((ActividadViewHolder) holder).bind(item.getActividadModel(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
+            ((ActividadViewHolder) holder).bind(item.getActividadModel(),
+                    onActividadClickListener,
+                    onDetallesClickListener,
+                    onEditarClickListener,
+                    onEliminarClickListener,
+                    onAsistentesClickListener);
         } else if (holder instanceof TituloViewHolder) {
             ((TituloViewHolder) holder).bind(item.getTitulo());
         } else if (holder instanceof PasadasViewHolder) {
-            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(), onActividadClickListener, onDetallesClickListener, onEditarClickListener, onEliminarClickListener);
+            ((PasadasViewHolder) holder).bind(item.getActividadesPasadas(),
+                    onActividadClickListener,
+                    onDetallesClickListener,
+                    onEditarClickListener,
+                    onEliminarClickListener);
         }
     }
 
@@ -162,12 +177,56 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                          OnActividadClickListener onActividadClickListener,
                          OnDetallesClickListener onDetallesClickListener,
                          OnEditarClickListener onEditarClickListener,
-                         OnEliminarClickListener onEliminarClickListener) {
+                         OnEliminarClickListener onEliminarClickListener,
+                         OnAsistentesClickListener onAsistentesClickListener) {
             tvTituloActividad.setText(actividadModel.getTitle());
+
+            // Imagen
+            String imageUrl = actividadModel.getImage();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(imageUrl)
+                        .placeholder(R.drawable.default_image)
+                        .error(R.drawable.default_image)
+                        .into(ivActividadImagen);
+            } else {
+                ivActividadImagen.setImageResource(R.drawable.default_image);
+            }
+
+            // Switch Promocionar
             switchPromocion.setChecked(actividadModel.isPromoted());
             switchPromocion.setEnabled(!actividadModel.isPasada());
+            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (!actividadModel.isPasada()) {
+                    String id = actividadModel.getId();
+                    if (id == null || id.isEmpty() || id.equals("0")) {
+                        Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
+                    String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+                            .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
+                    PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
+                    ApiService apiService = RetrofitClient.getApiService();
+                    apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(buttonView.getContext(), "Promoción actualizada", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(buttonView.getContext(), "Error al actualizar", Toast.LENGTH_SHORT).show();
+                            }
+                        }
 
-            // Clic en tarjeta completa
+                        @Override
+                        public void onFailure(Call<ResponseBody> call, Throwable t) {
+                            Toast.makeText(buttonView.getContext(), "Fallo de red", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            });
+
+            // Click en tarjeta
             itemView.setOnClickListener(v -> {
                 if (onActividadClickListener != null) {
                     onActividadClickListener.onActividadClick(actividadModel);
@@ -195,35 +254,17 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 }
             });
 
-            // Acción del Switch Promocionar
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (!actividadModel.isPasada()) {
-                    String id = actividadModel.getId();
-                    if (id == null || id.isEmpty() || id.equals("0")) {
-                        Toast.makeText(buttonView.getContext(), "ID no válido", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+            // Layout Asistentes (Texto)
+            itemView.findViewById(R.id.layoutAsistentes).setOnClickListener(v -> {
+                if (onAsistentesClickListener != null) {
+                    onAsistentesClickListener.onAsistentesClick(actividadModel);
+                }
+            });
 
-                    String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
-                    String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000));
-                    PromotionRequest request = new PromotionRequest(id, isChecked, startDate, endDate);
-
-                    ApiService apiService = RetrofitClient.getApiService();
-                    apiService.promoteTask(id, request).enqueue(new Callback<ResponseBody>() {
-                        @Override
-                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                            if (response.isSuccessful()) {
-                                Toast.makeText(buttonView.getContext(), "Promoción actualizada", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(buttonView.getContext(), "Error al actualizar", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(Call<ResponseBody> call, Throwable t) {
-                            Toast.makeText(buttonView.getContext(), "Fallo de red", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            // Botón "+" (ImageButton)
+            itemView.findViewById(R.id.btnPlus).setOnClickListener(v -> {
+                if (onAsistentesClickListener != null) {
+                    onAsistentesClickListener.onAsistentesClick(actividadModel);
                 }
             });
         }
@@ -258,16 +299,15 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             List<Item> items = pasadas.stream()
                     .map(a -> new Item(Item.TYPE_ACTIVIDAD, a, null, null))
                     .collect(Collectors.toList());
-
             ActividadAdapter adapter = new ActividadAdapter(
                     recyclerPasadas.getContext(),
                     items,
                     onActividadClickListener,
                     onEliminarClickListener,
                     onEditarClickListener,
-                    onDetallesClickListener
+                    onDetallesClickListener,
+                    null
             );
-
             recyclerPasadas.setLayoutManager(new LinearLayoutManager(recyclerPasadas.getContext(), LinearLayoutManager.HORIZONTAL, false));
             recyclerPasadas.setAdapter(adapter);
         }

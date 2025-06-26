@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F9F9F9"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/nombreComunidadTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Comunidad"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:gravity="center"
+        android:paddingBottom="16dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chatRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never"
+        android:clipToPadding="false"
+        android:paddingHorizontal="4dp"
+        android:background="@drawable/bg_chat_container"
+        android:elevation="2dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_input_bar"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <EditText
+            android:id="@+id/messageEditText"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="Escribe un mensaje..."
+            android:maxLines="3"
+            android:paddingHorizontal="16dp"
+            android:textColor="#000000"
+            android:textColorHint="#999999"
+            android:background="@drawable/bg_edittext"
+            android:imeOptions="actionSend|flagNoExtractUi"
+            android:inputType="textShortMessage"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:importantForAutofill="no"/>
+
+        <ImageButton
+            android:id="@+id/btnRecord"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_circle_button"
+            android:contentDescription="Grabar"
+            android:src="@drawable/ic_mic"
+            app:tint="@color/primaryColor"
+            android:elevation="4dp"
+            android:scaleType="centerInside"
+            tools:ignore="TouchTargetSizeCheck"/>
+
+        <ImageButton
+            android:id="@+id/sendButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_circle_button"
+            android:contentDescription="Enviar"
+            android:src="@drawable/ic_send"
+            app:tint="@color/primaryColor"
+            android:elevation="4dp"
+            android:scaleType="centerInside"
+            tools:ignore="TouchTargetSizeCheck"/>
+    </LinearLayout>
+</LinearLayout>

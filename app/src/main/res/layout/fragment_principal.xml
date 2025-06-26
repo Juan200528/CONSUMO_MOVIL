@@ -14,7 +14,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:text="MIS ACTIVIDADES"
-        android:textSize="22sp"/>
+        android:textSize="22sp"
+        android:textStyle="bold"/>
 
     <!-- Mensaje cuando no hay actividades -->
     <TextView
@@ -34,8 +35,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:paddingStart="0dp"
-        android:paddingEnd="0dp"
+        android:paddingBottom="72dp"
         android:clipToPadding="false"
         android:clipChildren="false"
         android:scrollbars="vertical"/>

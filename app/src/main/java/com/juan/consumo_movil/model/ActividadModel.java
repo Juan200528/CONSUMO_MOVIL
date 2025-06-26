@@ -23,11 +23,17 @@ public class ActividadModel {
     @SerializedName("responsible")
     private List<String> responsible;
 
-    @SerializedName("isPromoted")
-    private boolean isPromoted;
+    @SerializedName("promocionada")
+    private boolean promocionada;
 
-    @SerializedName("past")
+    @SerializedName("asistido")
+    private boolean asistido;
+
+    @SerializedName("pasada")
     private boolean pasada;
+
+    @SerializedName("image")
+    private String imageUrl;
 
     @SerializedName("user")
     private User user;
@@ -39,81 +45,115 @@ public class ActividadModel {
         public String getId() {
             return id;
         }
+
+        public void setId(String id) {
+            this.id = id;
+        }
     }
 
-    // --- Getters ---
+    // --- Getters y Setters ---
 
     public String getId() {
         return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public String getPlace() {
-        return place;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public List<String> getResponsible() {
-        return responsible;
-    }
-
-    public boolean isPromoted() {
-        return isPromoted;
-    }
-
-    public boolean isPasada() {
-        return pasada;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    // --- Setters ---
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setPlace(String place) {
-        this.place = place;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public void setResponsible(List<String> responsible) {
-        this.responsible = responsible;
-    }
-
-    public void setPromoted(boolean promoted) {
-        isPromoted = promoted;
     }
 
     public void setId(String id) {
         this.id = id;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getPlace() {
+        return place;
+    }
+
+    public void setPlace(String place) {
+        this.place = place;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    public List<String> getResponsible() {
+        return responsible;
+    }
+
+    public void setResponsible(List<String> responsible) {
+        this.responsible = responsible;
+    }
+
+    public boolean isPromoted() {
+        return promocionada;
+    }
+
+    public void setPromoted(boolean promocionada) {
+        this.promocionada = promocionada;
+    }
+
+    public boolean isAsistido() {
+        return asistido;
+    }
+
+    public void setAsistido(boolean asistido) {
+        this.asistido = asistido;
+    }
+
+    public boolean isPasada() {
+        return pasada;
+    }
+
     public void setPasada(boolean pasada) {
         this.pasada = pasada;
     }
 
+    public String getImage() {
+        return imageUrl;
+    }
+
+    public void setImage(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
     public void setUser(User user) {
         this.user = user;
+    }
+
+    // ✅ Métodos nuevos para comparar objetos
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ActividadModel)) return false;
+
+        ActividadModel that = (ActividadModel) o;
+
+        return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return getId() != null ? getId().hashCode() : 0;
     }
 }

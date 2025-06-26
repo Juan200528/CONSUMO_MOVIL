@@ -4,8 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class SessionManager {
-    private static SessionManager instance;
-
     private static final String PREF_NAME = "user_session";
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_USERNAME = "username";
@@ -17,27 +15,37 @@ public class SessionManager {
 
     private final SharedPreferences sharedPreferences;
 
-    // Constructor privado (para Singleton)
+    // ✅ Instancia Singleton
+    private static SessionManager instance;
+
     public SessionManager(Context context) {
         sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
-    // Método para inicializar la instancia
-    public static synchronized void init(Context context) {
+
+    /**
+     * Inicializa la instancia global del SessionManager
+     */
+    public static void init(Context context) {
         if (instance == null) {
             instance = new SessionManager(context);
         }
     }
 
-    // Método para obtener la instancia
-    public static synchronized SessionManager getInstance() {
+    /**
+     * Devuelve la instancia global del SessionManager
+     */
+    public static SessionManager getInstance() {
         if (instance == null) {
-            throw new IllegalStateException("SessionManager no ha sido inicializado. Llama a SessionManager.init(context) primero.");
+            throw new IllegalStateException("SessionManager no ha sido inicializado. Llama a SessionManager.init(context) antes.");
         }
         return instance;
     }
 
-    // Guardar datos
+    /**
+     * Guarda los datos principales del usuario al iniciar sesión
+     */
+
     public void guardarSesion(String id, String username, String email, String phone) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(KEY_USER_ID, id);
@@ -60,44 +68,25 @@ public class SessionManager {
         editor.apply();
     }
 
-    // Obtener datos
-    public String getUserId() {
-        return sharedPreferences.getString(KEY_USER_ID, null);
-    }
-
-    public String getUsername() {
-        return sharedPreferences.getString(KEY_USERNAME, null);
-    }
-
-    public String getEmail() {
-        return sharedPreferences.getString(KEY_EMAIL, null);
-    }
-
-    public String getPhone() {
-        return sharedPreferences.getString(KEY_PHONE, null);
-    }
-
-    public String getAddress() {
-        return sharedPreferences.getString(KEY_ADDRESS, null);
-    }
-
-    public String getToken() {
-        return sharedPreferences.getString(KEY_TOKEN, null);
-    }
+    public String getUserId() { return sharedPreferences.getString(KEY_USER_ID, null); }
+    public String getUsername() { return sharedPreferences.getString(KEY_USERNAME, null); }
+    public String getEmail() { return sharedPreferences.getString(KEY_EMAIL, null); }
+    public String getPhone() { return sharedPreferences.getString(KEY_PHONE, null); }
+    public String getAddress() { return sharedPreferences.getString(KEY_ADDRESS, null); }
+    public String getToken() { return sharedPreferences.getString(KEY_TOKEN, null); }
 
     public boolean isLoggedIn() {
         return sharedPreferences.getBoolean(KEY_LOGGED_IN, false);
+    }
+
+    public String fetchAuthToken() {
+        String token = getToken();
+        return (token != null && !token.isEmpty()) ? "Bearer " + token : null;
     }
 
     public void cerrarSesion() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
         editor.apply();
-    }
-
-    // Nuevo método: Devuelve el token con prefijo Bearer
-    public String fetchAuthToken() {
-        String token = getToken();
-        return (token != null && !token.isEmpty()) ? "Bearer " + token : null;
     }
 }

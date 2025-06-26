@@ -9,7 +9,7 @@
     android:background="@color/colorB"
     tools:context=".Registro">
 
-    <!-- Encabezado -->
+    <!-- Título -->
     <TextView
         android:id="@+id/titleTextView"
         android:layout_width="wrap_content"
@@ -20,6 +20,7 @@
         android:textStyle="bold"
         android:layout_marginTop="60dp"/>
 
+    <!-- Subtítulo -->
     <TextView
         android:id="@+id/subtitleTextView"
         android:layout_width="wrap_content"
@@ -35,7 +36,7 @@
         android:layout_width="match_parent"
         android:layout_height="20dp"/>
 
-    <!-- Formulario de Registro -->
+    <!-- Campo Nombre Completo -->
     <EditText
         android:id="@+id/fullNameEditText"
         android:layout_width="match_parent"
@@ -43,19 +44,21 @@
         android:hint="Nombre y apellido"
         android:inputType="textCapWords|textPersonName"
         android:background="@drawable/edit_text_border"
-        android:layout_marginTop="12dp"
-        android:padding="12dp"/>
+        android:padding="12dp"
+        android:layout_marginTop="12dp"/>
 
+    <!-- Campo Correo Electrónico -->
     <EditText
         android:id="@+id/emailEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Correo electronico"
+        android:hint="Correo electrónico"
         android:inputType="textEmailAddress"
         android:background="@drawable/edit_text_border"
-        android:layout_marginTop="12dp"
-        android:padding="12dp"/>
+        android:padding="12dp"
+        android:layout_marginTop="12dp"/>
 
+    <!-- Campo Contraseña -->
     <EditText
         android:id="@+id/passwordEditText"
         android:layout_width="match_parent"
@@ -63,9 +66,10 @@
         android:hint="Contraseña"
         android:inputType="textPassword"
         android:background="@drawable/edit_text_border"
-        android:layout_marginTop="12dp"
-        android:padding="12dp"/>
+        android:padding="12dp"
+        android:layout_marginTop="12dp"/>
 
+    <!-- Campo Confirmar Contraseña -->
     <EditText
         android:id="@+id/confirmPasswordEditText"
         android:layout_width="match_parent"
@@ -73,15 +77,15 @@
         android:hint="Confirmar contraseña"
         android:inputType="textPassword"
         android:background="@drawable/edit_text_border"
-        android:layout_marginTop="12dp"
-        android:padding="12dp"/>
+        android:padding="12dp"
+        android:layout_marginTop="12dp"/>
 
     <!-- Espaciador -->
     <View
         android:layout_width="match_parent"
         android:layout_height="20dp"/>
 
-    <!-- Botones y Enlaces -->
+    <!-- Botón Registrar -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnRegistrar"
         android:layout_width="225dp"
@@ -92,6 +96,23 @@
         android:textStyle="normal"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Botón Acceder con Google -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnGoogle"
+        android:layout_width="225dp"
+        android:layout_height="48dp"
+        android:text="Acceder con Google"
+        android:textColor="#444444"
+        android:background="@drawable/button_google_style"
+        android:textAllCaps="false"
+        android:textStyle="normal"
+        android:drawableLeft="@drawable/ic_google_logo"
+        android:drawablePadding="10dp"
+        android:gravity="center"
+        android:padding="10dp"
+        android:elevation="4dp"
+        android:layout_marginBottom="16dp"/>
+
     <!-- Enlace Iniciar Sesión -->
     <TextView
         android:id="@+id/loginLinkTextView"
@@ -99,9 +120,10 @@
         android:layout_height="wrap_content"
         android:text="¿Ya tienes cuenta? Entrar"
         android:layout_marginTop="16dp"
-        android:layout_gravity="center_horizontal"/>
+        android:layout_gravity="center_horizontal"
+        android:textSize="14sp"/>
 
-    <!-- Espaciador -->
+    <!-- Espaciador inferior -->
     <View
         android:layout_width="match_parent"
         android:layout_height="40dp"/>
