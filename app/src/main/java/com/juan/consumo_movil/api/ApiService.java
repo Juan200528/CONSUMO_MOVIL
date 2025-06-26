@@ -7,6 +7,9 @@ import com.juan.consumo_movil.models.ResetPasswordRequest;
 import com.juan.consumo_movil.model.User;
 import com.juan.consumo_movil.models.PromotionRequest;
 
+import com.juan.consumo_movil.models.NotificationConfig;
+import com.juan.consumo_movil.models.NotificationResponse;
+
 import java.util.List;
 
 import okhttp3.MultipartBody;
@@ -149,4 +152,34 @@ public interface ApiService {
     // 📧 Verificar correo electrónico
     @POST("/verify-email")
     Call<ResponseBody> verifyEmail(@Header("Authorization") String token);
+
+
+    // 🔔 GUARDAR NOTIFICACIÓN
+    // 🔔 GUARDAR NOTIFICACIÓN
+    @POST("api/notifications")
+    Call<NotificationResponse> saveNotificationConfig(
+            @Header("Authorization") String token,
+            @Body NotificationConfig notificationConfig
+    );
+
+    // 🔔 OBTENER TODAS LAS NOTIFICACIONES DEL USUARIO
+    @GET("api/notifications")
+    Call<List<NotificationResponse>> getUserNotifications(
+            @Header("Authorization") String token
+    );
+
+    // 🔁 ACTUALIZAR NOTIFICACIÓN
+    @PUT("api/notifications/{id}")
+    Call<NotificationResponse> updateNotification(
+            @Header("Authorization") String token,
+            @Path("id") String id,
+            @Body NotificationConfig notificationConfig
+    );
+
+    // 🗑️ ELIMINAR NOTIFICACIÓN
+    @DELETE("api/notifications/{id}")
+    Call<Void> deleteNotification(
+            @Header("Authorization") String token,
+            @Path("id") String id
+    );
 }

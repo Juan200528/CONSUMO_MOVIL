@@ -22,19 +22,21 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.juan.consumo_movil.R;
-import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.api.ApiService;
+import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.Recordatorio;
+import com.juan.consumo_movil.models.NotificationConfig;
+import com.juan.consumo_movil.models.NotificationResponse;
 import com.juan.consumo_movil.NotificationWorker;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import java.util.concurrent.TimeUnit;
 
 public class FragmentRecordatorio extends Fragment {
 
@@ -46,7 +48,10 @@ public class FragmentRecordatorio extends Fragment {
     private List<ActividadModel> listaActividades = new ArrayList<>();
 
     // Token del usuario logueado
-    private String token = "Bearer TU_TOKEN_AQUI"; // Reemplaza con el token real
+    private String token = "Bearer TU_TOKEN_AQUI"; // Reemplaza esto con el token real
+
+    // Servicio de API
+    private ApiService apiService;
 
     public FragmentRecordatorio() {}
 
@@ -60,6 +65,8 @@ public class FragmentRecordatorio extends Fragment {
         Button btnGuardar = view.findViewById(R.id.btnGuardarConfig);
         recyclerView = view.findViewById(R.id.recycler_view_notifications);
 
+        apiService = RetrofitClient.getApiService();
+
         listaRecordatorios = new ArrayList<>();
         adaptador = new AdaptadorRecordatorio(
                 listaRecordatorios,
@@ -72,8 +79,11 @@ public class FragmentRecordatorio extends Fragment {
 
         createNotificationChannel();
 
-        // Cargar todas las actividades al iniciar el fragment
+        // Cargar todas las actividades desde la API
         cargarTodasLasActividades();
+
+        // Cargar notificaciones desde el backend
+        cargarNotificacionesDesdeBackend();
 
         btnGuardar.setOnClickListener(v -> {
             String titulo = etTitulo.getText().toString().trim();
@@ -103,14 +113,45 @@ public class FragmentRecordatorio extends Fragment {
 
                 String fecha = actividadEncontrada.getDate();
                 String lugar = actividadEncontrada.getPlace();
+                String taskId = actividadEncontrada.getId(); // Obtenemos el ID de la actividad
 
-                Recordatorio nuevo = new Recordatorio(titulo, dias, fecha, lugar);
-                listaRecordatorios.add(nuevo);
-                adaptador.notifyItemInserted(listaRecordatorios.size() - 1);
-                programarNotificacion(nuevo, dias);
-                etTitulo.setText("");
-                etDias.setText("");
-                Toast.makeText(getContext(), "Guardado", Toast.LENGTH_SHORT).show();
+                NotificationConfig config = new NotificationConfig(
+                        titulo,
+                        dias,
+                        fecha,
+                        lugar,
+                        taskId // ✅ Ahora se pasan los 5 argumentos necesarios
+                );
+
+                Call<NotificationResponse> call = apiService.saveNotificationConfig(token, config);
+                call.enqueue(new Callback<NotificationResponse>() {
+                    @Override
+                    public void onResponse(Call<NotificationResponse> call, Response<NotificationResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            Recordatorio nuevo = new Recordatorio(
+                                    config.getTitle(),
+                                    config.getDaysBefore(),
+                                    config.getDate(),
+                                    config.getPlace()
+                            );
+                            nuevo.setId(response.body().getId());
+                            nuevo.setActivityId(config.getTask()); // Asignamos el activityId
+                            listaRecordatorios.add(nuevo);
+                            adaptador.notifyItemInserted(listaRecordatorios.size() - 1);
+                            programarNotificacion(nuevo, dias);
+                            etTitulo.setText("");
+                            etDias.setText("");
+                            Toast.makeText(getContext(), "Guardado en servidor", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), "Error al guardar en servidor", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<NotificationResponse> call, Throwable t) {
+                        Toast.makeText(getContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
             } catch (NumberFormatException e) {
                 Toast.makeText(getContext(), "Número inválido", Toast.LENGTH_SHORT).show();
@@ -152,6 +193,81 @@ public class FragmentRecordatorio extends Fragment {
             @Override
             public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
                 Toast.makeText(getContext(), "Error al cargar actividades de otros usuarios", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void cargarNotificacionesDesdeBackend() {
+        Call<List<NotificationResponse>> call = apiService.getUserNotifications(token);
+        call.enqueue(new Callback<List<NotificationResponse>>() {
+            @Override
+            public void onResponse(Call<List<NotificationResponse>> call, Response<List<NotificationResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    for (NotificationResponse n : response.body()) {
+                        Recordatorio r = new Recordatorio(
+                                n.getTitle(),
+                                n.getDaysBefore(),
+                                n.getDate(),
+                                n.getPlace()
+                        );
+                        r.setId(n.getId());
+                        r.setActivityId(n.getTaskId()); // Asegúrate de tener este getter
+                        listaRecordatorios.add(r);
+                    }
+                    adaptador.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<NotificationResponse>> call, Throwable t) {
+                Toast.makeText(getContext(), "No se pudieron cargar las notificaciones", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void actualizarEnBackend(Recordatorio recordatorio, int position) {
+        NotificationConfig config = new NotificationConfig(
+                recordatorio.getTitulo(),
+                recordatorio.getDiasAntes(),
+                recordatorio.getFecha(),
+                recordatorio.getLugar(),
+                recordatorio.getActivityId() // ✅ Ahora se pasa el task ID
+        );
+
+        Call<NotificationResponse> call = apiService.updateNotification(token, recordatorio.getId(), config);
+        call.enqueue(new Callback<NotificationResponse>() {
+            @Override
+            public void onResponse(Call<NotificationResponse> call, Response<NotificationResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    adaptador.notifyItemChanged(position);
+                } else {
+                    Toast.makeText(getContext(), "Error al actualizar", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<NotificationResponse> call, Throwable t) {
+                Toast.makeText(getContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void eliminarDelBackend(String id, int position) {
+        Call<Void> call = apiService.deleteNotification(token, id);
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    listaRecordatorios.remove(position);
+                    adaptador.notifyItemRemoved(position);
+                } else {
+                    Toast.makeText(getContext(), "No se pudo eliminar", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(getContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -209,6 +325,7 @@ public class FragmentRecordatorio extends Fragment {
                         recordatorio.setDiasAntes(nuevosDias);
                         adaptador.notifyItemChanged(position);
                         programarNotificacion(recordatorio, nuevosDias);
+                        actualizarEnBackend(recordatorio, position);
                         dialog.dismiss();
                     } else {
                         Toast.makeText(getContext(), "Ingresa un número válido", Toast.LENGTH_SHORT).show();
@@ -225,12 +342,12 @@ public class FragmentRecordatorio extends Fragment {
     }
 
     private void showDeleteDialog(int position) {
+        Recordatorio recordatorio = listaRecordatorios.get(position);
         new AlertDialog.Builder(requireContext())
                 .setTitle("Eliminar Recordatorio")
                 .setMessage("¿Estás seguro de que deseas eliminar este recordatorio?")
                 .setPositiveButton("Eliminar", (dialog, which) -> {
-                    listaRecordatorios.remove(position);
-                    adaptador.notifyItemRemoved(position);
+                    eliminarDelBackend(recordatorio.getId(), position);
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();

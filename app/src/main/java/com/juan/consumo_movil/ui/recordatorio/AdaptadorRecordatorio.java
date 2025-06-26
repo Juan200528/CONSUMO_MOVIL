@@ -49,11 +49,15 @@ public class AdaptadorRecordatorio extends RecyclerView.Adapter<AdaptadorRecorda
         holder.tvFecha.setText("Fecha: " + recordatorio.getFecha());
         holder.tvLugar.setText("Lugar: " + recordatorio.getLugar());
 
-        holder.btnEditar.setOnClickListener(v ->
-                onEditClickListener.onEditClick(recordatorio, position));
+        if (onEditClickListener != null) {
+            holder.btnEditar.setOnClickListener(v ->
+                    onEditClickListener.onEditClick(recordatorio, position));
+        }
 
-        holder.btnEliminar.setOnClickListener(v ->
-                onDeleteClickListener.onDeleteClick(position));
+        if (onDeleteClickListener != null) {
+            holder.btnEliminar.setOnClickListener(v ->
+                    onDeleteClickListener.onDeleteClick(position));
+        }
     }
 
     @Override
