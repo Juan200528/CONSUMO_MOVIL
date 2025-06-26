@@ -25,6 +25,29 @@ public class Asistente {
     @SerializedName("activityName")
     private String actividadNombre;
 
+    public Asistente() {}
+
+    // Constructor adicional para facilitar la creación al asistir
+    public Asistente(String id, String idAsistente, String idActividad, String nombreCompleto,
+                     String nombre, String correo, String actividadNombre) {
+        this.id = id;
+        this.idAsistente = idAsistente;
+        this.idActividad = idActividad;
+        this.nombreCompleto = nombreCompleto;
+        this.nombre = nombre;
+        this.correo = correo;
+        this.actividadNombre = actividadNombre;
+    }
+
+    // Getter adicional para obtener taskId como int si se requiere
+    public int getIdActividadAsInt() {
+        try {
+            return Integer.parseInt(idActividad);
+        } catch (NumberFormatException e) {
+            return -1; // Valor por defecto en caso de error
+        }
+    }
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

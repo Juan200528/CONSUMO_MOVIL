@@ -22,6 +22,7 @@ import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.Actividad;
 import com.juan.consumo_movil.models.ActividadAdapterLista;
+import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 import com.juan.consumo_movil.utils.SessionManager;
 import java.text.ParseException;
@@ -221,7 +222,49 @@ public class ListaFragment extends Fragment implements
 
     @Override
     public void onAsistirClick(Actividad actividad, int position) {
-        Toast.makeText(requireContext(), "Asistiendo a: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+        String token = sessionManager.fetchAuthToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userId = miUsuarioId; // Ya es String según tu modelo
+        String taskId = actividad.getId(); // También es String
+
+        // Simulamos algunos datos desde el usuario logueado o la actividad
+        String fullName = sessionManager.getUserName(); // Asume que tienes este método
+        String email = sessionManager.getUserEmail();   // Opcional: obtén desde SessionManager
+        String activityName = actividad.getTitulo();
+
+        // Creamos el objeto Asistente usando el constructor completo
+        Asistente asistente = new Asistente(
+                null, // id -> se genera en backend
+                userId,
+                taskId,
+                fullName,
+                null, // nombre -> opcional, puedes calcularlo desde fullName
+                email,
+                activityName
+        );
+
+        RetrofitClient.getApiService().confirmAttendance("Bearer " + token, asistente)
+                .enqueue(new Callback<Asistente>() {
+                    @Override
+                    public void onResponse(Call<Asistente> call, Response<Asistente> response) {
+                        if (response.isSuccessful()) {
+                            actividad.setAsistido(true);
+                            adapter.notifyItemChanged(position);
+                            Toast.makeText(requireContext(), "Ahora asistes a " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(), "Error al asistir", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Asistente> call, Throwable t) {
+                        Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     @Override

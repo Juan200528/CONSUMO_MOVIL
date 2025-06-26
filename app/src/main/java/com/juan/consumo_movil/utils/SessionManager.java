@@ -22,7 +22,6 @@ public class SessionManager {
         sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     }
 
-
     /**
      * Inicializa la instancia global del SessionManager
      */
@@ -45,7 +44,6 @@ public class SessionManager {
     /**
      * Guarda los datos principales del usuario al iniciar sesión
      */
-
     public void guardarSesion(String id, String username, String email, String phone) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(KEY_USER_ID, id);
@@ -83,6 +81,39 @@ public class SessionManager {
         String token = getToken();
         return (token != null && !token.isEmpty()) ? "Bearer " + token : null;
     }
+
+    // ====== 🔧 Métodos nuevos añadidos aquí ======
+
+    /**
+     * Obtiene el nombre de usuario directamente
+     */
+    public String getUserName() {
+        return getUsername(); // Reutilizamos el getter existente
+    }
+
+    /**
+     * Obtiene el correo del usuario directamente
+     */
+    public String getUserEmail() {
+        return getEmail(); // Reutilizamos el getter existente
+    }
+
+    /**
+     * Devuelve el token sin el prefijo Bearer
+     */
+    public String getRawAuthToken() {
+        return getToken(); // Ya retorna el token puro
+    }
+
+    /**
+     * Valida si el token existe y no está vacío
+     */
+    public boolean isTokenValid() {
+        String token = getToken();
+        return token != null && !token.trim().isEmpty();
+    }
+
+    // ====== 🔚 Fin de métodos nuevos ======
 
     public void cerrarSesion() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
