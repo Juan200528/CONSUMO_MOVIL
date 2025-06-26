@@ -57,6 +57,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-storage") // Añadido: para usar Storage
 
+    // Google Sign-In (importante para login con Google)
+    implementation("com.google.android.gms:play-services-auth:20.5.0")
     // RecyclerView
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 

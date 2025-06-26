@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -103,28 +104,34 @@ public class InicioSesion extends AppCompatActivity {
     private void setupPasswordToggle(final EditText editText) {
         editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
         editText.setCompoundDrawablePadding(10);
+
         editText.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
-            int drawableRightStart = editText.getRight()
-                    - editText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
-                    - editText.getCompoundDrawablePadding();
-            if (event.getAction() == MotionEvent.ACTION_DOWN ||
-                    event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (event.getRawX() >= drawableRightStart) {
-                    editText.setTransformationMethod(null);
-                    editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
-                    return true;
+            EditText edit = (EditText) v;
+            int drawableRightStart = edit.getRight()
+                    - edit.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width()
+                    - edit.getCompoundDrawablePadding();
+
+            if (event.getRawX() >= drawableRightStart) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        edit.setTransformationMethod(null);
+                        edit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_on, 0);
+                        edit.setSelection(edit.getText().length());
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        edit.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                        edit.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
+                        edit.setSelection(edit.getText().length());
+                        return true;
                 }
-            } else if (event.getAction() == MotionEvent.ACTION_UP ||
-                    event.getAction() == MotionEvent.ACTION_CANCEL) {
-                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                editText.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye_off, 0);
-                editText.setSelection(editText.getText().length());
-                return true;
             }
+
             return false;
         });
     }
+
 
     private void setupLoginButtonWithStateEffect() {
         GradientDrawable gradientDrawableNormal = new GradientDrawable(
@@ -211,13 +218,14 @@ public class InicioSesion extends AppCompatActivity {
 
                     redirigirAMenu();
                 } else {
-                    // Credenciales incorrectas
+                    Toast.makeText(InicioSesion.this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
                 isLoggingIn = false;
+                Toast.makeText(InicioSesion.this, "Fallo al conectar con el servidor", Toast.LENGTH_SHORT).show();
             }
         });
     }

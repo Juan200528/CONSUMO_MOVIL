@@ -96,6 +96,23 @@
         android:textStyle="normal"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Botón Acceder con Google -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnGoogle"
+        android:layout_width="225dp"
+        android:layout_height="48dp"
+        android:text="Acceder con Google"
+        android:textColor="#444444"
+        android:background="@drawable/button_google_style"
+        android:textAllCaps="false"
+        android:textStyle="normal"
+        android:drawableLeft="@drawable/ic_google_logo"
+        android:drawablePadding="10dp"
+        android:gravity="center"
+        android:padding="10dp"
+        android:elevation="4dp"
+        android:layout_marginBottom="16dp"/>
+
     <!-- Enlace Iniciar Sesión -->
     <TextView
         android:id="@+id/loginLinkTextView"

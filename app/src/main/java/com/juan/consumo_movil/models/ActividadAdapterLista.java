@@ -30,10 +30,8 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     private static final int VIEW_TYPE_MI_ACTIVIDAD = 3;
     private static final int VIEW_TYPE_OTRA_ACTIVIDAD = 1;
     private static final int VIEW_TYPE_ASISTIR = 2;
-
     private List<Actividad> actividadList;
     private String miUsuarioId;
-
     private OnActividadClickListener clickListener;
     private OnDetallesClickListener detallesListener;
     private OnAsistirClickListener asistirListener;
@@ -87,7 +85,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         this.eliminarListener = eliminarListener;
         this.promocionarListener = promocionarListener;
         this.gestionarAsistentesClickListener = gestionarAsistentesClickListener;
-
         if (sessionManager != null && sessionManager.getUserId() != null) {
             this.miUsuarioId = sessionManager.getUserId();
         } else {
@@ -155,9 +152,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         Switch switchPromocion;
         ImageButton btnEditar;
         ImageButton btnEliminar;
-
-        // Botones nuevos para gestión de asistentes
-        TextView tvAgregarAsistentes; // Debe estar en item_actividad.xml
+        TextView tvAgregarAsistentes;
         ImageButton btnPlus;
 
         MiActividadViewHolder(@NonNull View itemView) {
@@ -168,8 +163,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             switchPromocion = itemView.findViewById(R.id.switchPromocion);
             btnEditar = itemView.findViewById(R.id.btnEditar);
             btnEliminar = itemView.findViewById(R.id.btnEliminar);
-
-            // Estos IDs deben existir en tu layout item_actividad.xml
             tvAgregarAsistentes = itemView.findViewById(R.id.tvAgregarAsistentes);
             btnPlus = itemView.findViewById(R.id.btnPlus);
         }
@@ -179,35 +172,30 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             cargarImagen(ivImagen, actividad.getImagenRuta());
             switchPromocion.setChecked(actividad.isPromocionada());
 
-            // Navegación al hacer clic en el item
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) {
                     clickListener.onActividadClick(actividad);
                 }
             });
 
-            // Botón Ver Detalles
             btnVerDetalles.setOnClickListener(v -> {
                 if (detallesListener != null) {
                     detallesListener.onDetallesClick(actividad);
                 }
             });
 
-            // Botón Editar
             btnEditar.setOnClickListener(v -> {
                 if (editarListener != null) {
                     editarListener.onEditarClick(actividad);
                 }
             });
 
-            // Botón Eliminar
             btnEliminar.setOnClickListener(v -> {
                 if (eliminarListener != null) {
                     eliminarListener.onEliminarClick(actividad);
                 }
             });
 
-            // Redirección a GestionarFragment
             View.OnClickListener navigateListener = v -> {
                 if (gestionarAsistentesClickListener != null) {
                     gestionarAsistentesClickListener.onGestionarAsistentesClick(actividad);
@@ -238,8 +226,9 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             cargarImagen(ivImagen, actividad.getImagenRuta());
 
             btnVerDetalles.setOnClickListener(v -> {
-                mostrarDialogoDetalles(actividad, v.getContext());
-                if (detallesListener != null) detallesListener.onDetallesClick(actividad);
+                if (detallesListener != null) {
+                    detallesListener.onDetallesClick(actividad);
+                }
             });
 
             btnAsistir.setOnClickListener(v -> {
@@ -269,8 +258,9 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             cargarImagen(ivImagen, actividad.getImagenRuta());
 
             btnVerDetalles.setOnClickListener(v -> {
-                mostrarDialogoDetalles(actividad, v.getContext());
-                if (detallesListener != null) detallesListener.onDetallesClick(actividad);
+                if (detallesListener != null) {
+                    detallesListener.onDetallesClick(actividad);
+                }
             });
 
             btnCancelar.setOnClickListener(v -> {
@@ -392,7 +382,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
 
         ivCerrar.setOnClickListener(v -> dialog.dismiss());
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
-
         btnConfirmar.setOnClickListener(v -> {
             listener.onEliminar(actividad);
             dialog.dismiss();
