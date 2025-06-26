@@ -15,8 +15,8 @@ import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 import com.juan.consumo_movil.ui.lista_actividades.ListaFragment;
 import com.juan.consumo_movil.ui.promocionadas.PromocionadasFragment;
-
-//import com.juan.consumo_movil.ui.RecordatorioFragment;
+ // Asegúrate de que esta línea esté descomentada
+import com.juan.consumo_movil.ui.recordatorio.FragmentRecordatorio;
 
 public class FragmentActPanel extends Fragment {
 
@@ -36,7 +36,7 @@ public class FragmentActPanel extends Fragment {
         cardGestionAsistentes.setOnClickListener(v -> abrirFragmento(new GestionarFragment()));
         cardListaActividades.setOnClickListener(v -> abrirFragmento(new ListaFragment()));
         cardPromocionadas.setOnClickListener(v -> abrirFragmento(new PromocionadasFragment()));
-       // cardRecordatorio.setOnClickListener(v -> abrirFragmento(new RecordatorioFragment()));
+        cardRecordatorio.setOnClickListener(v -> abrirFragmento(new FragmentRecordatorio())); // Línea activada
 
         aplicarEfectoPresion(view.findViewById(R.id.miBotton1));
         aplicarEfectoPresion(view.findViewById(R.id.miBotton2));

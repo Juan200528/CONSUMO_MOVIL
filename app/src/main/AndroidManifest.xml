@@ -28,7 +28,6 @@
             android:name=".ui.chat.ChatActivity"
             android:exported="false"
             android:noHistory="false"
-            android:screenOrientation="sensor"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true" />
 
@@ -36,7 +35,6 @@
             android:name=".CrearActividad"
             android:exported="false"
             android:noHistory="false"
-            android:screenOrientation="sensor"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true" />
 
@@ -44,7 +42,6 @@
             android:name=".MenuActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan"
-            android:screenOrientation="sensor"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true" />
 
@@ -52,7 +49,6 @@
             android:name=".Registro"
             android:exported="false"
             android:noHistory="true"
-            android:screenOrientation="sensor"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true" />
 
@@ -60,14 +56,12 @@
             android:name=".InicioSesion"
             android:exported="false"
             android:noHistory="true"
-            android:screenOrientation="sensor"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true" />
 
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:screenOrientation="sensor"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true" />
 
@@ -80,7 +74,6 @@
             android:name=".PantallaPrincipal"
             android:launchMode="singleTask"
             android:exported="true"
-            android:screenOrientation="sensor"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:hardwareAccelerated="true">
             <intent-filter>

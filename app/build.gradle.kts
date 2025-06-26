@@ -65,8 +65,12 @@ dependencies {
     // CircleImageView (opcional, para perfiles circulares)
     implementation("de.hdodenhof:circleimageview:3.1.0")
 
+    //Glide-module
+    implementation("androidx.work:work-runtime:2.8.1")
+
     // Pruebas
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
 }
