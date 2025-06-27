@@ -3,6 +3,7 @@ package com.juan.consumo_movil.ui.lista_actividades;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +30,9 @@ import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 import com.juan.consumo_movil.utils.SessionManager;
 
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -332,34 +336,59 @@ public class ListaFragment extends Fragment implements
     }
 
     private void cancelarAsistencia(Actividad actividad, int position) {
-        String token = sessionManager.fetchAuthToken();
-        if (token == null || token.isEmpty()) {
+        String rawToken = sessionManager.fetchAuthToken();
+
+        if (rawToken == null || rawToken.isEmpty()) {
             Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String userId = miUsuarioId;
+        String token = "Bearer " + rawToken;
         String taskId = actividad.getId();
 
-        RetrofitClient.getApiService().deleteAssistance("Bearer " + token, userId, taskId)
+        if (taskId == null || taskId.isEmpty()) {
+            Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Log.d("CancelarAsistencia", "Token: " + token);
+        Log.d("CancelarAsistencia", "Task ID: " + taskId);
+
+        RetrofitClient.getApiService().cancelAttendance(token, taskId)
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
                         if (response.isSuccessful()) {
+                            Toast.makeText(requireContext(), "Asistencia cancelada", Toast.LENGTH_SHORT).show();
                             actividad.setAsistido(false);
                             adapter.notifyItemChanged(position);
-                            Toast.makeText(requireContext(), "Has dejado de asistir a " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(requireContext(), "Error al cancelar asistencia", Toast.LENGTH_SHORT).show();
+                            try {
+                                if (response.errorBody() != null) {
+                                    String errorBody = response.errorBody().string();
+                                    Log.e("CancelarAsistencia", "ErrorBody: " + errorBody);
+                                    JSONObject errorJson = new JSONObject(errorBody);
+                                    String message = errorJson.optString("message", "Error desconocido");
+                                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+                                } else {
+                                    Toast.makeText(requireContext(), "Error desconocido del servidor", Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (Exception e) {
+                                Log.e("CancelarAsistencia", "Excepción al manejar el error", e);
+                                Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Void> call, Throwable t) {
-                        Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                        Log.e("CancelarAsistencia", "Fallo de conexión", t);
+                        Toast.makeText(requireContext(), "Fallo de conexión: " + t.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
     }
+
+
 
     @Override
     public void onEditarClick(Actividad actividad) {
