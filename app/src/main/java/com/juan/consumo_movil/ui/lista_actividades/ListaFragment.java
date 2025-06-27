@@ -1,4 +1,5 @@
 package com.juan.consumo_movil.ui.lista_actividades;
+
 import android.app.Dialog;
 import android.os.Bundle;
 import android.os.Looper;
@@ -11,11 +12,13 @@ import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.RetrofitClient;
@@ -25,12 +28,14 @@ import com.juan.consumo_movil.models.ActividadAdapterLista;
 import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.ui.gestionar.GestionarFragment;
 import com.juan.consumo_movil.utils.SessionManager;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -41,7 +46,8 @@ public class ListaFragment extends Fragment implements
         ActividadAdapterLista.OnAsistirClickListener,
         ActividadAdapterLista.OnEditarClickListener,
         ActividadAdapterLista.OnEliminarClickListener,
-        ActividadAdapterLista.OnPromocionarClickListener {
+        ActividadAdapterLista.OnPromocionarClickListener,
+        ActividadAdapterLista.OnGestionarAsistentesClickListener {
 
     private RecyclerView recyclerView;
     private ActividadAdapterLista adapter;
@@ -60,31 +66,35 @@ public class ListaFragment extends Fragment implements
         tvEmpty = view.findViewById(R.id.tvEmptyLista);
         sessionManager = new SessionManager(requireContext());
         miUsuarioId = sessionManager.getUserId();
+
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        // Inicializar adaptador con todos los listeners
         adapter = new ActividadAdapterLista(
                 actividadList,
-                this::onActividadClick,
-                this::onDetallesClick,
-                this::onAsistirClick,
-                this::onEditarClick,
-                this::onEliminarClick,
-                this::onPromocionarClick,
-                this::onGestionarAsistentesClick,
+                this,
+                this,
+                this,
+                this,
+                this,
+                this,
+                this,
                 sessionManager
         );
         recyclerView.setAdapter(adapter);
+
         cargarActividadesIniciales();
         btnBuscar.setOnClickListener(v -> mostrarDialogoBusqueda());
+
         return view;
     }
 
     private void cargarActividadesIniciales() {
         String token = sessionManager.fetchAuthToken();
         if (token == null || token.isEmpty()) return;
+
         tvEmpty.setText("Cargando actividades...");
         tvEmpty.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
+
         RetrofitClient.getApiService().obtenerActividadesOtrosUsuarios(token)
                 .enqueue(new Callback<List<ActividadModel>>() {
                     @Override
@@ -134,10 +144,12 @@ public class ListaFragment extends Fragment implements
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialog_buscar_filtros);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
         EditText etBuscar = dialog.findViewById(R.id.etBuscar);
         RadioGroup rgFecha = dialog.findViewById(R.id.rgFechaSeleccionada);
         RadioGroup rgEstado = dialog.findViewById(R.id.rgEstadoSeleccionado);
         Button btnBuscar = dialog.findViewById(R.id.btnBuscar);
+
         btnBuscar.setOnClickListener(v -> {
             String filtroTexto = etBuscar.getText().toString().trim();
             boolean proximas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaProximas;
@@ -146,15 +158,18 @@ public class ListaFragment extends Fragment implements
             aplicarFiltros(filtroTexto, proximas, pasadas, promocionadas);
             dialog.dismiss();
         });
+
         dialog.show();
     }
 
     private void aplicarFiltros(String texto, boolean proximas, boolean pasadas, boolean promocionadas) {
         String token = sessionManager.fetchAuthToken();
         if (token == null || token.isEmpty()) return;
+
         tvEmpty.setText("Buscando...");
         tvEmpty.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
+
         RetrofitClient.getApiService().searchTasks(token, texto)
                 .enqueue(new Callback<List<ActividadModel>>() {
                     @Override
@@ -163,19 +178,24 @@ public class ListaFragment extends Fragment implements
                             List<Actividad> filtradas = new ArrayList<>();
                             Date hoy = new Date();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
                             for (ActividadModel model : response.body()) {
                                 Actividad act = convertirAPIaActividad(model);
+
                                 if (!texto.isEmpty() && !act.getTitulo().toLowerCase().contains(texto.toLowerCase())) continue;
+
                                 try {
                                     Date fechaAct = sdf.parse(act.getFecha());
                                     if (proximas && fechaAct != null && !fechaAct.after(hoy)) continue;
                                     if (pasadas && fechaAct != null && !fechaAct.before(hoy)) continue;
                                 } catch (ParseException e) {}
+
                                 boolean coincidePromocion = !promocionadas || act.isPromocionada();
                                 if (coincidePromocion) {
                                     filtradas.add(act);
                                 }
                             }
+
                             actividadList = filtradas;
                             adapter.updateItems(filtradas);
                             actualizarVisibilidad();
@@ -210,9 +230,7 @@ public class ListaFragment extends Fragment implements
 
     @Override
     public void onDetallesClick(Actividad actividad) {
-        // Evitar ejecución múltiple sin crear nuevas variables
         if (getActivity() == null || getActivity().isFinishing()) return;
-
         new android.os.Handler(Looper.getMainLooper()).post(() -> {
             try {
                 ActividadAdapterLista.mostrarDialogoDetalles(actividad, requireContext());
@@ -222,29 +240,58 @@ public class ListaFragment extends Fragment implements
 
     @Override
     public void onAsistirClick(Actividad actividad, int position) {
+        if (actividad.isAsistido()) {
+            mostrarDialogoCancelarAsistencia(actividad, position);
+        } else {
+            mostrarDialogoConfirmarAsistir(actividad, position);
+        }
+    }
+
+    private void mostrarDialogoConfirmarAsistir(Actividad actividad, int position) {
+        Dialog dialog = new Dialog(requireContext());
+        dialog.setContentView(R.layout.dialogo_asistir);
+
+        EditText etNombre = dialog.findViewById(R.id.etNombreAsistir);
+        EditText etEmail = dialog.findViewById(R.id.etEmailAsistir);
+        Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
+        Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirmar.setOnClickListener(v -> {
+            String nombre = etNombre.getText().toString().trim();
+            String email = etEmail.getText().toString().trim();
+
+            if (nombre.isEmpty() || email.isEmpty()) {
+                Toast.makeText(requireContext(), "Por favor complete todos los campos", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            confirmarAsistencia(actividad, position, nombre, email);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void confirmarAsistencia(Actividad actividad, int position, String nombre, String email) {
         String token = sessionManager.fetchAuthToken();
         if (token == null || token.isEmpty()) {
             Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String userId = miUsuarioId; // Ya es String según tu modelo
-        String taskId = actividad.getId(); // También es String
+        String userId = miUsuarioId;
+        String taskId = actividad.getId();
 
-        // Simulamos algunos datos desde el usuario logueado o la actividad
-        String fullName = sessionManager.getUserName(); // Asume que tienes este método
-        String email = sessionManager.getUserEmail();   // Opcional: obtén desde SessionManager
-        String activityName = actividad.getTitulo();
-
-        // Creamos el objeto Asistente usando el constructor completo
         Asistente asistente = new Asistente(
-                null, // id -> se genera en backend
+                null,
                 userId,
                 taskId,
-                fullName,
-                null, // nombre -> opcional, puedes calcularlo desde fullName
+                nombre,
+                nombre.split(" ")[0],
                 email,
-                activityName
+                actividad.getTitulo()
         );
 
         RetrofitClient.getApiService().confirmAttendance("Bearer " + token, asistente)
@@ -267,6 +314,53 @@ public class ListaFragment extends Fragment implements
                 });
     }
 
+    public void mostrarDialogoCancelarAsistencia(Actividad actividad, int position) {
+        Dialog dialog = new Dialog(requireContext());
+        dialog.setContentView(R.layout.dialogo_cancelar_asistencia);
+
+        Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
+        Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
+
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirmar.setOnClickListener(v -> {
+            cancelarAsistencia(actividad, position);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void cancelarAsistencia(Actividad actividad, int position) {
+        String token = sessionManager.fetchAuthToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userId = miUsuarioId;
+        String taskId = actividad.getId();
+
+        RetrofitClient.getApiService().deleteAssistance("Bearer " + token, userId, taskId)
+                .enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+                        if (response.isSuccessful()) {
+                            actividad.setAsistido(false);
+                            adapter.notifyItemChanged(position);
+                            Toast.makeText(requireContext(), "Has dejado de asistir a " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(), "Error al cancelar asistencia", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
     @Override
     public void onEditarClick(Actividad actividad) {
         ActividadAdapterLista.mostrarDialogoEditar(actividad, requireContext(), this::guardarCambios);
@@ -279,7 +373,7 @@ public class ListaFragment extends Fragment implements
 
     private void guardarCambios(Actividad actividad) {
         Toast.makeText(requireContext(), "Cambios guardados: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
-        adapter.updateItems(actividadList); // Refresca la lista
+        adapter.updateItems(actividadList);
     }
 
     private void eliminarActividad(Actividad actividad) {
@@ -295,25 +389,27 @@ public class ListaFragment extends Fragment implements
                 Toast.LENGTH_SHORT).show();
     }
 
-    private void onGestionarAsistentesClick(Actividad actividad) {
+    @Override
+    public void onGestionarAsistentesClick(Actividad actividad) {
         String activityId = actividad.getId();
         String activityTitle = actividad.getTitulo();
-        // Validar ID
+
         if (activityId == null || activityId.isEmpty()) {
             Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
             return;
         }
-        // Validar sesión
+
         if (sessionManager.fetchAuthToken() == null) {
             Toast.makeText(requireContext(), "Token no disponible. Inicia sesión nuevamente.", Toast.LENGTH_SHORT).show();
             return;
         }
-        // Navegar a GestionarFragment
+
         GestionarFragment gestionarFragment = new GestionarFragment();
         Bundle args = new Bundle();
         args.putString("activity_id", activityId);
         args.putString("activity_title", activityTitle);
         gestionarFragment.setArguments(args);
+
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, gestionarFragment)

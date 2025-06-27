@@ -110,6 +110,9 @@ public interface ApiService {
             @Body Asistente asistente
     );
 
+    @DELETE("assistance")
+    Call<Void> deleteAssistance(@Header("Authorization") String token, @Query("userId") String userId, @Query("taskId") String taskId);
+
     // ❌ Cancelar asistencia a una actividad
     @DELETE("api/attendances/cancel/{taskId}")
     Call<Void> cancelAttendance(
