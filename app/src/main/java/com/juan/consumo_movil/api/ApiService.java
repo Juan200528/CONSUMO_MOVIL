@@ -6,7 +6,6 @@ import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.models.ResetPasswordRequest;
 import com.juan.consumo_movil.model.User;
 import com.juan.consumo_movil.models.PromotionRequest;
-
 import com.juan.consumo_movil.models.NotificationConfig;
 import com.juan.consumo_movil.models.NotificationResponse;
 
@@ -110,14 +109,19 @@ public interface ApiService {
             @Body Asistente asistente
     );
 
-
-
     // ❌ Cancelar asistencia a una actividad
-    @DELETE("api/attendances/cancel/{taskId}")
+    @DELETE("api/attendances/{id}")
     Call<Void> cancelAttendance(
             @Header("Authorization") String token,
-            @Path("taskId") String taskId
-    );
+            @Path("id") String attendanceId);
+
+    // ✅ NUEVO MÉTODO ADICIONAL: Verifica si el usuario ya asiste a esta actividad
+    @GET("api/attendances/user-attendance/{taskId}")
+    Call<Boolean> checkUserAttendance(
+            @Header("Authorization") String token,
+            @Path("taskId") String taskId);
+
+
 
     // 📋 Obtener lista de asistentes por actividad
     @GET("api/attendances/{taskId}")
@@ -155,8 +159,6 @@ public interface ApiService {
     @POST("/verify-email")
     Call<ResponseBody> verifyEmail(@Header("Authorization") String token);
 
-
-    // 🔔 GUARDAR NOTIFICACIÓN
     // 🔔 GUARDAR NOTIFICACIÓN
     @POST("api/notifications")
     Call<NotificationResponse> saveNotificationConfig(

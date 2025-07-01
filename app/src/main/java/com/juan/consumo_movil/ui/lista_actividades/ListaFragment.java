@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.juan.consumo_movil.LocalAttendanceManager;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -104,12 +106,31 @@ public class ListaFragment extends Fragment implements
                     @Override
                     public void onResponse(@NonNull Call<List<ActividadModel>> call, @NonNull Response<List<ActividadModel>> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            List<Actividad> actividadesOtrosUsuarios = new ArrayList<>();
+                            List<Actividad> nuevasActividades = new ArrayList<>();
+
                             for (ActividadModel model : response.body()) {
                                 Actividad act = convertirAPIaActividad(model);
-                                actividadesOtrosUsuarios.add(act);
+
+                                // 👇 Busca si ya estaba marcado como asistido antes del refresco
+                                boolean yaAsiste = false;
+                                String oldAttendanceId = null;
+
+                                for (Actividad oldAct : actividadList) {
+                                    if (oldAct.getId().equals(act.getId())) {
+                                        yaAsiste = oldAct.isAsistido();
+                                        oldAttendanceId = oldAct.getAttendanceId(); // Necesitas tener este campo en tu clase Actividad
+                                        break;
+                                    }
+                                }
+
+                                // 👇 Actualizamos los valores de asistencia
+                                act.setAsistido(yaAsiste);
+                                act.setAttendanceId(oldAttendanceId); // Si existe, se mantiene
+
+                                nuevasActividades.add(act);
                             }
-                            actividadList = actividadesOtrosUsuarios;
+
+                            actividadList = nuevasActividades;
                             adapter.updateItems(actividadList);
                             actualizarVisibilidad();
                         } else {
@@ -119,10 +140,14 @@ public class ListaFragment extends Fragment implements
 
                     @Override
                     public void onFailure(@NonNull Call<List<ActividadModel>> call, @NonNull Throwable t) {
+                        Log.e("ListaFragment", "Fallo al obtener actividades", t);
+                        Toast.makeText(requireContext(), "Error de conexión", Toast.LENGTH_SHORT).show();
                         actualizarVisibilidad();
                     }
                 });
     }
+
+
 
     private Actividad convertirAPIaActividad(ActividadModel model) {
         Actividad act = new Actividad();
@@ -133,14 +158,54 @@ public class ListaFragment extends Fragment implements
         act.setFecha(model.getDate());
         act.setPromocionada(model.isPromoted());
         act.setPasada(model.isPasada());
-        act.setAsistido(false);
         act.setImagenRuta(model.getImage());
-        act.setIdCreador(model.getUser() != null ? model.getUser().getId() : "desconocido");
+
+        // Manejar el ID del creador de forma segura
+        String creadorId = "desconocido";
+        if (model.getUser() != null && model.getUser().getId() != null) {
+            creadorId = model.getUser().getId();
+        }
+        act.setIdCreador(creadorId);
+
+        // Mantener estado local si ya estaba marcado antes
+        boolean yaAsiste = false;
+        String oldAttendanceId = null;
+
+        // Buscar en la lista anterior
+        for (Actividad oldAct : actividadList) {
+            if (oldAct != null && oldAct.getId() != null && oldAct.getId().equals(act.getId())) {
+                yaAsiste = oldAct.isAsistido();
+                oldAttendanceId = oldAct.getAttendanceId();
+                break;
+            }
+        }
+
+        // Si no está guardado localmente, consulta en SharedPreferences
+        if (!yaAsiste) {
+            Set<String> attendances = LocalAttendanceManager.getAllAttendances(requireContext());
+            for (String item : attendances) {
+                if (item != null && item.contains("|") && item.startsWith(act.getId())) {
+                    String[] parts = item.split("\\|");
+                    if (parts.length > 1) {
+                        yaAsiste = true;
+                        oldAttendanceId = parts[1];
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Asignar valores finales a la actividad
+        act.setAsistido(yaAsiste);
+        act.setAttendanceId(oldAttendanceId);
+
+        // Responsables
         if (model.getResponsible() != null && !model.getResponsible().isEmpty()) {
             act.setResponsables(String.join(", ", model.getResponsible()));
         } else {
             act.setResponsables("Sin responsables");
         }
+
         return act;
     }
 
@@ -288,12 +353,19 @@ public class ListaFragment extends Fragment implements
         String userId = miUsuarioId;
         String taskId = actividad.getId();
 
+        // Validación adicional: asegurarse que el ID no sea nulo o vacío
+        if (taskId == null || taskId.trim().isEmpty()) {
+            Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
+            Log.e("confirmarAsistencia", "El ID de la actividad es nulo o vacío");
+            return;
+        }
+
         Asistente asistente = new Asistente(
-                null,
+                null, // id (null porque es nuevo)
                 userId,
                 taskId,
                 nombre,
-                nombre.split(" ")[0],
+                nombre.split(" ").length > 0 ? nombre.split(" ")[0] : nombre, // Evita fallos si no hay espacio
                 email,
                 actividad.getTitulo()
         );
@@ -302,18 +374,35 @@ public class ListaFragment extends Fragment implements
                 .enqueue(new Callback<Asistente>() {
                     @Override
                     public void onResponse(Call<Asistente> call, Response<Asistente> response) {
-                        if (response.isSuccessful()) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            Asistente res = response.body();
                             actividad.setAsistido(true);
+
+                            // Solo guardamos el attendanceId si viene del servidor
+                            String serverAttendanceId = res.getId();
+                            if (serverAttendanceId != null && !serverAttendanceId.isEmpty()) {
+                                actividad.setAttendanceId(serverAttendanceId);
+                                LocalAttendanceManager.saveAttendance(requireContext(), actividad.getId(), serverAttendanceId);
+                            }
+
                             adapter.notifyItemChanged(position);
                             Toast.makeText(requireContext(), "Ahora asistes a " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(requireContext(), "Error al asistir", Toast.LENGTH_SHORT).show();
+                            try {
+                                String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
+                                Log.e("confirmarAsistencia", "Error en API: " + errorBody);
+                                Toast.makeText(requireContext(), "Fallo al asistir", Toast.LENGTH_SHORT).show();
+                            } catch (IOException e) {
+                                Toast.makeText(requireContext(), "No se pudo procesar la respuesta", Toast.LENGTH_SHORT).show();
+                                Log.e("confirmarAsistencia", "Fallo al leer error body", e);
+                            }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Asistente> call, Throwable t) {
-                        Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                        Log.e("confirmarAsistencia", "Fallo de red: " + t.getMessage());
+                        Toast.makeText(requireContext(), "Fallo de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -337,53 +426,45 @@ public class ListaFragment extends Fragment implements
 
     private void cancelarAsistencia(Actividad actividad, int position) {
         String rawToken = sessionManager.fetchAuthToken();
-
         if (rawToken == null || rawToken.isEmpty()) {
             Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String token = "Bearer " + rawToken;
-        String taskId = actividad.getId();
+        String attendanceId = actividad.getAttendanceId(); // ✅ Usamos el ID correcto
 
-        if (taskId == null || taskId.isEmpty()) {
-            Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
+        if (attendanceId == null || attendanceId.trim().isEmpty()) {
+            Toast.makeText(requireContext(), "Asistencia no encontrada", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.d("CancelarAsistencia", "Token: " + token);
-        Log.d("CancelarAsistencia", "Task ID: " + taskId);
-
-        RetrofitClient.getApiService().cancelAttendance(token, taskId)
+        RetrofitClient.getApiService().deleteAttendance(token, attendanceId)
                 .enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
                         if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Asistencia cancelada", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "Asistencia eliminada", Toast.LENGTH_SHORT).show();
                             actividad.setAsistido(false);
+                            actividad.setAttendanceId(null);
+                            LocalAttendanceManager.removeAttendance(requireContext(), actividad.getId());
                             adapter.notifyItemChanged(position);
                         } else {
                             try {
-                                if (response.errorBody() != null) {
-                                    String errorBody = response.errorBody().string();
-                                    Log.e("CancelarAsistencia", "ErrorBody: " + errorBody);
-                                    JSONObject errorJson = new JSONObject(errorBody);
-                                    String message = errorJson.optString("message", "Error desconocido");
-                                    Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
-                                } else {
-                                    Toast.makeText(requireContext(), "Error desconocido del servidor", Toast.LENGTH_SHORT).show();
-                                }
-                            } catch (Exception e) {
-                                Log.e("CancelarAsistencia", "Excepción al manejar el error", e);
-                                Toast.makeText(requireContext(), "Error al procesar la respuesta", Toast.LENGTH_SHORT).show();
+                                String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
+                                Log.e("CancelarAsistencia", "Error en API: " + errorBody);
+                                Toast.makeText(requireContext(), "Fallo al cancelar", Toast.LENGTH_SHORT).show();
+                            } catch (IOException e) {
+                                Toast.makeText(requireContext(), "Error al leer respuesta", Toast.LENGTH_SHORT).show();
+                                Log.e("CancelarAsistencia", "Fallo al leer error body", e);
                             }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Void> call, Throwable t) {
-                        Log.e("CancelarAsistencia", "Fallo de conexión", t);
-                        Toast.makeText(requireContext(), "Fallo de conexión: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                        Log.e("CancelarAsistencia", "Fallo de red: " + t.getMessage());
+                        Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

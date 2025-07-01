@@ -30,15 +30,7 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <ImageButton
-                    android:id="@+id/btnConfig"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="120dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Configuración"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/config" />
+
             </LinearLayout>
 
             <!-- Imagen de la actividad -->

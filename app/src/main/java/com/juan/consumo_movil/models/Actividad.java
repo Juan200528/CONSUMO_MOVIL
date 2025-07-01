@@ -10,7 +10,9 @@ public class Actividad {
     private String responsables;
     private boolean promocionada;
     private boolean pasada;
-    private boolean asistido;
+    private boolean asistido = false;
+    private String attendanceId;
+
     private String idCreador;
     private String imagenRuta;
 
@@ -102,5 +104,17 @@ public class Actividad {
 
     public void setImagenRuta(String imagenRuta) {
         this.imagenRuta = imagenRuta;
+    }
+
+
+
+
+
+    public String getAttendanceId() {
+        return attendanceId;
+    }
+
+    public void setAttendanceId(String attendanceId) {
+        this.attendanceId = attendanceId;
     }
 }

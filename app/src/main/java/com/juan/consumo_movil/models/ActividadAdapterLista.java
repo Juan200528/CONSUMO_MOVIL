@@ -194,6 +194,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             ivImagen = itemView.findViewById(R.id.ivActividadImagenLista);
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             btnAsistir = itemView.findViewById(R.id.btnAsistirActividad);
+
         }
 
         void bind(Actividad actividad) {
@@ -217,6 +218,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             ivImagen = itemView.findViewById(R.id.ivActividadImagenAsistir);
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             btnCancelar = itemView.findViewById(R.id.btnCancelarAsistencia);
+
         }
 
         void bind(Actividad actividad) {
