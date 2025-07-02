@@ -110,13 +110,14 @@ public interface ApiService {
     );
 
     // ❌ Cancelar asistencia a una actividad
-    @DELETE("api/attendances/{id}")
+    @DELETE("/cancel/{taskId}")
     Call<Void> cancelAttendance(
             @Header("Authorization") String token,
-            @Path("id") String attendanceId);
+            @Path("taskId") String taskId);
 
     // ✅ NUEVO MÉTODO ADICIONAL: Verifica si el usuario ya asiste a esta actividad
-    @GET("api/attendances/user-attendance/{taskId}")
+
+    @GET("api/attendances/check/{taskId}")
     Call<Boolean> checkUserAttendance(
             @Header("Authorization") String token,
             @Path("taskId") String taskId);
@@ -141,7 +142,7 @@ public interface ApiService {
     // 🗑️ Eliminar asistente
     @DELETE("api/attendances/{id}")
     Call<Void> deleteAttendance(
-            @Path("id") String id,
+            @Path("id") String attendanceId,
             @Header("Authorization") String token
     );
 

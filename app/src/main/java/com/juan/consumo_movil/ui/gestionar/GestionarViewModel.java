@@ -202,13 +202,11 @@ public class GestionarViewModel extends AndroidViewModel {
         authToken = getApplication()
                 .getSharedPreferences("user_session", Application.MODE_PRIVATE)
                 .getString("auth_token", "");
-
         if (authToken == null || authToken.isEmpty()) {
             Log.e(TAG, "Token inválido al eliminar");
             Toast.makeText(getApplication(), "Tu sesión ha expirado", Toast.LENGTH_SHORT).show();
             return;
         }
-
         if (taskId == null || taskId.isEmpty()) {
             Log.e(TAG, "ID de actividad inválido al eliminar");
             Toast.makeText(getApplication(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
@@ -216,6 +214,7 @@ public class GestionarViewModel extends AndroidViewModel {
         }
 
         Log.d(TAG, "Eliminando asistente con ID: " + id);
+
         apiService.deleteAttendance(id, "Bearer " + authToken)
                 .enqueue(new Callback<Void>() {
                     @Override
@@ -235,6 +234,8 @@ public class GestionarViewModel extends AndroidViewModel {
                             Log.e(TAG, "Error al eliminar asistente. Código: " + response.code() + ", Mensaje: " + response.message() + ", Cuerpo: " + errorBody);
                             if (response.code() == 401) {
                                 Toast.makeText(getApplication(), "Sesión inválida, inicia sesión nuevamente", Toast.LENGTH_SHORT).show();
+                            } else if (response.code() == 404) {
+                                Toast.makeText(getApplication(), "Asistente no encontrado", Toast.LENGTH_SHORT).show();
                             } else {
                                 Toast.makeText(getApplication(), "Error al eliminar asistente", Toast.LENGTH_SHORT).show();
                             }

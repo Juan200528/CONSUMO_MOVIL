@@ -430,41 +430,70 @@ public class ListaFragment extends Fragment implements
             Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
             return;
         }
-
         String token = "Bearer " + rawToken;
-        String attendanceId = actividad.getAttendanceId(); // ✅ Usamos el ID correcto
 
-        if (attendanceId == null || attendanceId.trim().isEmpty()) {
-            Toast.makeText(requireContext(), "Asistencia no encontrada", Toast.LENGTH_SHORT).show();
+        String taskId = actividad.getId();
+        if (taskId == null || taskId.trim().isEmpty()) {
+            Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        RetrofitClient.getApiService().deleteAttendance(token, attendanceId)
-                .enqueue(new Callback<Void>() {
+        // Primero verificamos si el usuario realmente asiste a esta actividad
+        RetrofitClient.getApiService().checkUserAttendance(token, taskId)
+                .enqueue(new Callback<Boolean>() {
                     @Override
-                    public void onResponse(Call<Void> call, Response<Void> response) {
-                        if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Asistencia eliminada", Toast.LENGTH_SHORT).show();
+                    public void onResponse(Call<Boolean> call, Response<Boolean> response) {
+                        if (response.isSuccessful() && Boolean.TRUE.equals(response.body())) {
+                            // Usuario sí asiste, ahora obtenemos el attendanceId
+                            String attendanceId = actividad.getAttendanceId();
+
+                            if (attendanceId == null || attendanceId.trim().isEmpty()) {
+                                Toast.makeText(requireContext(), "ID de asistencia no encontrado", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            // Ahora sí cancelamos la asistencia
+                            RetrofitClient.getApiService().deleteAttendance(token, attendanceId)
+                                    .enqueue(new Callback<Void>() {
+                                        @Override
+                                        public void onResponse(Call<Void> call, Response<Void> response) {
+                                            if (response.isSuccessful()) {
+                                                Toast.makeText(requireContext(), "Asistencia eliminada", Toast.LENGTH_SHORT).show();
+                                                actividad.setAsistido(false);
+                                                actividad.setAttendanceId(null);
+                                                LocalAttendanceManager.removeAttendance(requireContext(), actividad.getId());
+                                                adapter.notifyItemChanged(position);
+                                            } else {
+                                                try {
+                                                    String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
+                                                    Log.e("CancelarAsistencia", "Error en API: " + errorBody);
+                                                    Toast.makeText(requireContext(), "Fallo al cancelar", Toast.LENGTH_SHORT).show();
+                                                } catch (IOException e) {
+                                                    Toast.makeText(requireContext(), "Error al leer respuesta", Toast.LENGTH_SHORT).show();
+                                                }
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(Call<Void> call, Throwable t) {
+                                            Log.e("CancelarAsistencia", "Fallo de red: " + t.getMessage());
+                                            Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+
+                        } else {
+                            Toast.makeText(requireContext(), "No estás registrado en esta actividad", Toast.LENGTH_SHORT).show();
                             actividad.setAsistido(false);
                             actividad.setAttendanceId(null);
                             LocalAttendanceManager.removeAttendance(requireContext(), actividad.getId());
                             adapter.notifyItemChanged(position);
-                        } else {
-                            try {
-                                String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
-                                Log.e("CancelarAsistencia", "Error en API: " + errorBody);
-                                Toast.makeText(requireContext(), "Fallo al cancelar", Toast.LENGTH_SHORT).show();
-                            } catch (IOException e) {
-                                Toast.makeText(requireContext(), "Error al leer respuesta", Toast.LENGTH_SHORT).show();
-                                Log.e("CancelarAsistencia", "Fallo al leer error body", e);
-                            }
                         }
                     }
 
                     @Override
-                    public void onFailure(Call<Void> call, Throwable t) {
-                        Log.e("CancelarAsistencia", "Fallo de red: " + t.getMessage());
-                        Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                    public void onFailure(Call<Boolean> call, Throwable t) {
+                        Log.e("checkUserAttendance", "Fallo de red: " + t.getMessage());
+                        Toast.makeText(requireContext(), "No se pudo verificar tu asistencia", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
