@@ -93,7 +93,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="¿No tienes una cuenta? Regístrate"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="@dimen/margin_standard"
         android:textAlignment="center"/>
 
     <!-- Espacio vertical -->
@@ -106,7 +106,7 @@
         android:id="@+id/tvBienvenida"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="@dimen/margin_standard"
         android:gravity="center"
         android:text="Bienvenidos\nGracias por visitar PanasCOOP,\ninicia sesión en tu cuenta."
         android:textAlignment="center"
