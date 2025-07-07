@@ -99,7 +99,7 @@
     <!-- Espacio vertical -->
     <Space
         android:layout_width="0dp"
-        android:layout_height="130dp" />
+        android:layout_height="150dp" />
 
     <!-- Mensaje Bienvenida -->
     <TextView
