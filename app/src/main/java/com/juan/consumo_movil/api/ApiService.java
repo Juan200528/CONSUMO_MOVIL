@@ -120,7 +120,7 @@ public interface ApiService {
     Call<AttendanceCheckResponse> checkUserAttendance(@Path("taskId") String taskId);
 
 
-    // 📋 Obtener lista de asistentes por actividad
+    // 📋 Obtener lista de asistentes por
     @GET("api/attendances/{taskId}")
     Call<List<Asistente>> getAttendees(
             @Path("taskId") String taskId,
