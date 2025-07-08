@@ -42,7 +42,7 @@ public class PromocionadasFragment extends Fragment {
     private Runnable refreshRunnable;
     private static final long REFRESH_INTERVAL = 60000; // 60 segundos
 
-    @Nullable
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {

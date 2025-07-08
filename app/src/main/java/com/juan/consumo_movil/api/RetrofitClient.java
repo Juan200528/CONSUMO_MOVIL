@@ -14,7 +14,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
 
-    private static final String BASE_URL = "https://backend-nrpu.onrender.com/";
+    private static final String BASE_URL = "https://backend-nrpu.onrender.com/ ";
     private static volatile Retrofit retrofit = null; // Asegúrate de mantener esto para thread safety
     private static volatile ApiService apiService = null;
     private static Context appContext;

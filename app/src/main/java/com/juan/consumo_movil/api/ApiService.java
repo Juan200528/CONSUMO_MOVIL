@@ -1,6 +1,7 @@
 package com.juan.consumo_movil.api;
 
 import com.juan.consumo_movil.model.ActividadModel;
+import com.juan.consumo_movil.model.AttendanceCheckResponse;
 import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.models.ResetPasswordRequest;
@@ -110,18 +111,13 @@ public interface ApiService {
     );
 
     // ❌ Cancelar asistencia a una actividad
-    @DELETE("/cancel/{taskId}")
-    Call<Void> cancelAttendance(
-            @Header("Authorization") String token,
-            @Path("taskId") String taskId);
+    @DELETE("/attendance/cancel/{taskId}")
+    Call<Void> cancelAttendance(@Path("taskId") String taskId);
 
     // ✅ NUEVO MÉTODO ADICIONAL: Verifica si el usuario ya asiste a esta actividad
 
-    @GET("api/attendances/check/{taskId}")
-    Call<Boolean> checkUserAttendance(
-            @Header("Authorization") String token,
-            @Path("taskId") String taskId);
-
+    @GET("/attendance/check/{taskId}")
+    Call<AttendanceCheckResponse> checkUserAttendance(@Path("taskId") String taskId);
 
 
     // 📋 Obtener lista de asistentes por actividad

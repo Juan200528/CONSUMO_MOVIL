@@ -1,6 +1,7 @@
 package com.juan.consumo_movil.ui.lista_actividades;
 
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
@@ -13,6 +14,8 @@ import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.juan.consumo_movil.model.AttendanceCheckResponse;
+import com.juan.consumo_movil.model.Attendance;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -425,12 +428,21 @@ public class ListaFragment extends Fragment implements
     }
 
     private void cancelarAsistencia(Actividad actividad, int position) {
+        if (getContext() == null) {
+            Log.e("CancelarAsistencia", "Contexto no disponible");
+            return;
+        }
+
         String rawToken = sessionManager.fetchAuthToken();
         if (rawToken == null || rawToken.isEmpty()) {
             Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
             return;
         }
-        String token = "Bearer " + rawToken;
+
+        if (actividad == null) {
+            Toast.makeText(requireContext(), "Actividad no válida", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         String taskId = actividad.getId();
         if (taskId == null || taskId.trim().isEmpty()) {
@@ -438,27 +450,26 @@ public class ListaFragment extends Fragment implements
             return;
         }
 
-        // Primero verificamos si el usuario realmente asiste a esta actividad
-        RetrofitClient.getApiService().checkUserAttendance(token, taskId)
-                .enqueue(new Callback<Boolean>() {
+        ProgressDialog progressDialog = new ProgressDialog(requireContext());
+        progressDialog.setMessage("Verificando asistencia...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // Verificar si el usuario asiste a esta actividad
+        RetrofitClient.getApiService().checkUserAttendance(taskId)
+                .enqueue(new Callback<AttendanceCheckResponse>() {
                     @Override
-                    public void onResponse(Call<Boolean> call, Response<Boolean> response) {
-                        if (response.isSuccessful() && Boolean.TRUE.equals(response.body())) {
-                            // Usuario sí asiste, ahora obtenemos el attendanceId
-                            String attendanceId = actividad.getAttendanceId();
+                    public void onResponse(Call<AttendanceCheckResponse> call, Response<AttendanceCheckResponse> response) {
+                        if (progressDialog.isShowing()) progressDialog.dismiss();
 
-                            if (attendanceId == null || attendanceId.trim().isEmpty()) {
-                                Toast.makeText(requireContext(), "ID de asistencia no encontrado", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-
-                            // Ahora sí cancelamos la asistencia
-                            RetrofitClient.getApiService().deleteAttendance(token, attendanceId)
+                        if (response.isSuccessful() && response.body() != null && response.body().isAttending()) {
+                            // Usuario sí asiste, ahora cancelamos
+                            RetrofitClient.getApiService().cancelAttendance(taskId)
                                     .enqueue(new Callback<Void>() {
                                         @Override
                                         public void onResponse(Call<Void> call, Response<Void> response) {
                                             if (response.isSuccessful()) {
-                                                Toast.makeText(requireContext(), "Asistencia eliminada", Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(requireContext(), "Asistencia cancelada", Toast.LENGTH_SHORT).show();
                                                 actividad.setAsistido(false);
                                                 actividad.setAttendanceId(null);
                                                 LocalAttendanceManager.removeAttendance(requireContext(), actividad.getId());
@@ -467,7 +478,15 @@ public class ListaFragment extends Fragment implements
                                                 try {
                                                     String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
                                                     Log.e("CancelarAsistencia", "Error en API: " + errorBody);
-                                                    Toast.makeText(requireContext(), "Fallo al cancelar", Toast.LENGTH_SHORT).show();
+
+                                                    int code = response.code();
+                                                    if (code == 404) {
+                                                        Toast.makeText(requireContext(), "Actividad no encontrada", Toast.LENGTH_SHORT).show();
+                                                    } else if (code == 403) {
+                                                        Toast.makeText(requireContext(), "No tienes permiso para cancelar", Toast.LENGTH_SHORT).show();
+                                                    } else {
+                                                        Toast.makeText(requireContext(), "Fallo al cancelar", Toast.LENGTH_SHORT).show();
+                                                    }
                                                 } catch (IOException e) {
                                                     Toast.makeText(requireContext(), "Error al leer respuesta", Toast.LENGTH_SHORT).show();
                                                 }
@@ -491,7 +510,9 @@ public class ListaFragment extends Fragment implements
                     }
 
                     @Override
-                    public void onFailure(Call<Boolean> call, Throwable t) {
+                    public void onFailure(Call<AttendanceCheckResponse> call, Throwable t) {
+                        if (progressDialog.isShowing()) progressDialog.dismiss();
+
                         Log.e("checkUserAttendance", "Fallo de red: " + t.getMessage());
                         Toast.makeText(requireContext(), "No se pudo verificar tu asistencia", Toast.LENGTH_SHORT).show();
                     }
