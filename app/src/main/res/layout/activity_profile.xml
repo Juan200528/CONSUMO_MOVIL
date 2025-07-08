@@ -39,7 +39,7 @@
                 android:background="@android:color/transparent"
                 android:gravity="center"
                 android:inputType="textPersonName"
-                android:minHeight="48dp"
+                android:minHeight="40dp"
                 android:paddingBottom="4dp"
                 android:text="Jane Cooper"
                 android:textColor="#1A3E1F"
@@ -79,9 +79,9 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/card_background"
-                android:padding="16dp"
+                android:padding="10dp"
                 android:elevation="2dp"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="8dp">
 
                 <!-- Email -->
                 <LinearLayout
@@ -211,7 +211,7 @@
                 android:orientation="horizontal"
                 android:gravity="center"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="14dp"
                 android:padding="8dp"
                 android:background="?attr/selectableItemBackground">
 

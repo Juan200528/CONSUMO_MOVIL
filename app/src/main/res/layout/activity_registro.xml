@@ -136,7 +136,7 @@
         android:text="Bienvenidos\nGracias por visitar PanasCOOP,\nRegistrate."
         android:textAlignment="center"
         android:gravity="center"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="52dp"
         android:textColor="@color/mensajes"
         android:textSize="12sp"/>
 </LinearLayout>
