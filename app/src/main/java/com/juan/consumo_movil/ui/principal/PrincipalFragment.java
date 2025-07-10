@@ -73,16 +73,13 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         // Inicializar vistas
         recyclerActividades = root.findViewById(R.id.recyclerActividades);
         tvEmptyActividades = root.findViewById(R.id.tvEmptyActividades);
-
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerActividades.setLayoutManager(layoutManager);
         recyclerActividades.setHasFixedSize(true);
-
         SnapHelper snapHelper = new LinearSnapHelper();
         snapHelper.attachToRecyclerView(recyclerActividades);
 
         itemList = new ArrayList<>();
-
         actividadAdapter = new ActividadAdapter(
                 requireContext(),
                 itemList,
@@ -95,17 +92,14 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                     Bundle args = new Bundle();
                     args.putString("activity_id", actividad.getId());
                     args.putString("activity_title", actividad.getTitle());
-
                     GestionarFragment gestionarFragment = new GestionarFragment();
                     gestionarFragment.setArguments(args);
-
                     getParentFragmentManager().beginTransaction()
                             .replace(R.id.fragment_container, gestionarFragment)
                             .addToBackStack(null)
                             .commit();
                 }
         );
-
         recyclerActividades.setAdapter(actividadAdapter);
 
         return root;
@@ -223,10 +217,8 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
-
         ivCerrar.setOnClickListener(v -> dialog.dismiss());
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
-
         btnConfirmar.setOnClickListener(v -> {
             SessionManager sessionManager = new SessionManager(requireContext());
             String token = sessionManager.getToken();
@@ -235,7 +227,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 dialog.dismiss();
                 return;
             }
-
             ApiService api = RetrofitClient.getApiService();
             Call<Void> call = api.eliminarActividad("Bearer " + token, actividad.getId());
             call.enqueue(new Callback<Void>() {
@@ -260,7 +251,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 }
             });
         });
-
         dialog.show();
     }
 
@@ -296,7 +286,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
             Toast.makeText(getContext(), "Cambios guardados", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
-
         ivCerrar.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
@@ -315,7 +304,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         int year = cal.get(Calendar.YEAR);
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
-
         ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(requireContext(), R.style.DatePickerTheme_Custom);
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 contextThemeWrapper,
@@ -327,7 +315,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 },
                 year, month, day
         );
-
         datePickerDialog.setOnShowListener(dialogInterface -> {
             try {
                 DatePickerDialog d = (DatePickerDialog) dialogInterface;
@@ -337,7 +324,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 Log.e("DatePicker", "Error al cambiar color de botones", e);
             }
         });
-
         datePickerDialog.show();
     }
 
@@ -366,7 +352,17 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
 
         tvTituloDetalle.setText(actividad.getTitle());
         tvDescripcionDetalle.setText(actividad.getDescription());
-        tvFechaDetalle.setText(actividad.getDate());
+
+        // Mostrar solo la parte de la fecha
+        String fechaCompleta = actividad.getDate();
+        String fechaMostrar = fechaCompleta;
+        try {
+            fechaMostrar = fechaCompleta.split("T")[0]; // Ejemplo: "2025-04-05"
+        } catch (Exception ignored) {
+            // Si no tiene formato esperado, dejar como está
+        }
+        tvFechaDetalle.setText(fechaMostrar);
+
         tvLugarDetalle.setText(actividad.getPlace());
         tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
 
@@ -383,7 +379,6 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         if (switchPromocion != null) {
             switchPromocion.setChecked(actividad.isPromoted());
             switchPromocion.setEnabled(!actividad.isPasada());
-
             switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 SessionManager sessionManager = new SessionManager(requireContext());
                 String token = sessionManager.getToken();
@@ -392,18 +387,15 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                     switchPromocion.setChecked(!isChecked);
                     return;
                 }
-
                 String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
                 String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
                         .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)); // 30 días
-
                 PromotionRequest request = new PromotionRequest(
                         actividad.getId(),
                         isChecked,
                         startDate,
                         endDate
                 );
-
                 ApiService api = RetrofitClient.getApiService();
                 api.promoteTask(actividad.getId(), request).enqueue(new Callback<ResponseBody>() {
                     @Override

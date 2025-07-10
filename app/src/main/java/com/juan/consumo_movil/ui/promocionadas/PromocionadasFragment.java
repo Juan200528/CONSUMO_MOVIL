@@ -42,7 +42,6 @@ public class PromocionadasFragment extends Fragment {
     private Runnable refreshRunnable;
     private static final long REFRESH_INTERVAL = 60000; // 60 segundos
 
-
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
@@ -139,7 +138,17 @@ public class PromocionadasFragment extends Fragment {
         // Asignar valores desde el modelo
         tvTituloDetalle.setText(actividad.getTitle());
         tvDescripcionDetalle.setText(actividad.getDescription());
-        tvFechaDetalle.setText(actividad.getDate());
+
+        // Procesar solo la parte de la fecha
+        String fechaCompleta = actividad.getDate();
+        String fechaMostrar = fechaCompleta;
+        try {
+            fechaMostrar = fechaCompleta.split("T")[0]; // Solo la parte de la fecha
+        } catch (Exception ignored) {
+            // Dejar como está si no tiene el formato esperado
+        }
+        tvFechaDetalle.setText(fechaMostrar);
+
         tvLugarDetalle.setText(actividad.getPlace());
 
         if (actividad.getResponsible() != null && !actividad.getResponsible().isEmpty()) {

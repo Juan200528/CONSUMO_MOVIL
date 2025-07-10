@@ -1,7 +1,12 @@
 package com.juan.consumo_movil.model;
 
 import com.google.gson.annotations.SerializedName;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class ActividadModel {
 
@@ -38,17 +43,8 @@ public class ActividadModel {
     @SerializedName("user")
     private User user;
 
-    public static class User {
-        @SerializedName("_id")
-        private String id;
-
-        public String getId() {
-            return id;
-        }
-
-        public void setId(String id) {
-            this.id = id;
-        }
+    // --- Constructor vacío necesario para Gson ---
+    public ActividadModel() {
     }
 
     // --- Getters y Setters ---
@@ -141,7 +137,23 @@ public class ActividadModel {
         this.user = user;
     }
 
-    // ✅ Métodos nuevos para comparar objetos
+    /**
+     * Verifica si la actividad aún es vigente comparando su fecha con la actual.
+     *
+     * @return true si la fecha de la actividad es posterior a la fecha actual.
+     */
+    public boolean estaVigente() {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            Date fechaActividad = sdf.parse(this.date);
+            return fechaActividad != null && fechaActividad.after(new Date());
+        } catch (ParseException e) {
+            // Si hay error al parsear la fecha, se asume que no es vigente
+            return false;
+        }
+    }
+
+    // --- Métodos equals y hashCode basados en el ID único de la actividad ---
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -155,5 +167,19 @@ public class ActividadModel {
     @Override
     public int hashCode() {
         return getId() != null ? getId().hashCode() : 0;
+    }
+
+    // --- Clase interna User ---
+    public static class User {
+        @SerializedName("_id")
+        private String id;
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
     }
 }
