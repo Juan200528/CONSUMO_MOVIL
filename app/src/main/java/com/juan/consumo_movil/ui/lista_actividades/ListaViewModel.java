@@ -13,8 +13,10 @@ import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.models.Actividad;
 import com.juan.consumo_movil.utils.SessionManager;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import retrofit2.Call;
@@ -26,18 +28,24 @@ public class ListaViewModel extends ViewModel {
     private static final String TAG = "ListaViewModel";
 
     private final MutableLiveData<List<Actividad>> actividades = new MutableLiveData<>();
+    private final MutableLiveData<List<Actividad>> todasLasActividades = new MutableLiveData<>();
     private String token; // Almacenamos el token una sola vez
 
     public LiveData<List<Actividad>> getActividades() {
         return actividades;
     }
 
+    public LiveData<List<Actividad>> getTodasLasActividades() {
+        return todasLasActividades;
+    }
+
     /**
      * Carga las actividades desde la API solo si no están ya cargadas
      */
     public void cargarActividadesDesdeApi(Context context) {
-        if (actividades.getValue() != null && !actividades.getValue().isEmpty()) {
-            // Ya tenemos datos, no recargamos
+        if (todasLasActividades.getValue() != null && !todasLasActividades.getValue().isEmpty()) {
+            List<Actividad> noPasadas = filtrarNoPasadas(todasLasActividades.getValue());
+            actividades.setValue(noPasadas);
             return;
         }
 
@@ -47,6 +55,7 @@ public class ListaViewModel extends ViewModel {
         if (token == null || token.isEmpty()) {
             Log.e(TAG, "Token no disponible");
             actividades.setValue(new ArrayList<>());
+            todasLasActividades.setValue(new ArrayList<>());
             return;
         }
 
@@ -58,10 +67,13 @@ public class ListaViewModel extends ViewModel {
             public void onResponse(Call<List<ActividadModel>> call, Response<List<ActividadModel>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Actividad> listaConvertida = convertirAActividadLocal(response.body());
-                    actividades.setValue(listaConvertida);
+                    todasLasActividades.setValue(listaConvertida);
+                    List<Actividad> noPasadas = filtrarNoPasadas(listaConvertida);
+                    actividades.setValue(noPasadas);
                 } else {
                     Log.e(TAG, "Error al obtener actividades. Código: " + response.code());
                     actividades.setValue(new ArrayList<>());
+                    todasLasActividades.setValue(new ArrayList<>());
                 }
             }
 
@@ -69,6 +81,7 @@ public class ListaViewModel extends ViewModel {
             public void onFailure(Call<List<ActividadModel>> call, Throwable t) {
                 Log.e(TAG, "Fallo al llamar a la API", t);
                 actividades.setValue(new ArrayList<>());
+                todasLasActividades.setValue(new ArrayList<>());
             }
         });
     }
@@ -80,7 +93,6 @@ public class ListaViewModel extends ViewModel {
             Actividad actividad = new Actividad();
 
             actividad.setId(model.getId());
-
             actividad.setTitulo(model.getTitle());
             actividad.setDescripcion(model.getDescription());
             actividad.setLugar(model.getPlace());
@@ -99,9 +111,9 @@ public class ListaViewModel extends ViewModel {
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 if (model.getDate() != null && !model.getDate().isEmpty()) {
-                    esPasada = sdf.parse(model.getDate()).before(new java.util.Date());
+                    esPasada = sdf.parse(model.getDate()).before(new Date());
                 }
-            } catch (Exception ignored) {}
+            } catch (ParseException ignored) {}
 
             actividad.setPasada(esPasada);
             actividad.setAsistido(false);
@@ -111,5 +123,47 @@ public class ListaViewModel extends ViewModel {
         }
 
         return lista;
+    }
+
+    private List<Actividad> filtrarNoPasadas(List<Actividad> lista) {
+        List<Actividad> resultado = new ArrayList<>();
+        for (Actividad act : lista) {
+            if (!act.isPasada()) {
+                resultado.add(act);
+            }
+        }
+        return resultado;
+    }
+
+    public void aplicarFiltro(boolean mostrarProximas, boolean mostrarPasadas, boolean mostrarPromocionadas) {
+        List<Actividad> source = todasLasActividades.getValue();
+        if (source == null) {
+            actividades.setValue(new ArrayList<>());
+            return;
+        }
+
+        List<Actividad> filtradas = new ArrayList<>();
+
+        for (Actividad act : source) {
+            boolean pasaFiltro = true;
+
+            if (mostrarProximas && act.isPasada()) {
+                pasaFiltro = false;
+            }
+
+            if (mostrarPasadas && !act.isPasada()) {
+                pasaFiltro = false;
+            }
+
+            if (mostrarPromocionadas && !act.isPromocionada()) {
+                pasaFiltro = false;
+            }
+
+            if (pasaFiltro) {
+                filtradas.add(act);
+            }
+        }
+
+        actividades.setValue(filtradas);
     }
 }

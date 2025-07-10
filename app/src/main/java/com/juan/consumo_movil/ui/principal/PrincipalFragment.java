@@ -99,6 +99,7 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                     GestionarFragment gestionarFragment = new GestionarFragment();
                     gestionarFragment.setArguments(args);
 
+
                     getParentFragmentManager().beginTransaction()
                             .replace(R.id.fragment_container, gestionarFragment)
                             .addToBackStack(null)
@@ -341,15 +342,15 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         datePickerDialog.show();
     }
 
-    private void mostrarDialogoDetalles(ActividadModel actividad, View itemView) {
-        Dialog dialog = new Dialog(itemView.getContext());
+    private void mostrarDialogoDetalles(ActividadModel actividad) {
+        Dialog dialog = new Dialog(requireContext());
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE); // Sin título
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); // Fondo transparente
 
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
-        lp.width = (int) (itemView.getResources().getDisplayMetrics().widthPixels * 0.8f);
+        lp.width = (int) (requireContext().getResources().getDisplayMetrics().widthPixels * 0.8f);
         lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
         dialog.getWindow().setAttributes(lp);
 
@@ -371,12 +372,12 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
         tvResponsablesDetalle.setText(String.join(", ", actividad.getResponsible()));
 
         if (ivImagenDetalle != null && actividad.getImage() != null && !actividad.getImage().isEmpty()) {
-            Glide.with(this)
+            Glide.with(requireContext())
                     .load(actividad.getImage())
                     .placeholder(R.drawable.default_image)
                     .error(R.drawable.default_image)
                     .into(ivImagenDetalle);
-        } else if (ivImagenDetalle != null) {
+        } else {
             ivImagenDetalle.setImageResource(R.drawable.default_image);
         }
 
@@ -388,14 +389,14 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                 SessionManager sessionManager = new SessionManager(requireContext());
                 String token = sessionManager.getToken();
                 if (token == null || token.isEmpty()) {
-                    Toast.makeText(itemView.getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(buttonView.getContext(), "Error: Token no disponible", Toast.LENGTH_SHORT).show();
                     switchPromocion.setChecked(!isChecked);
                     return;
                 }
 
                 String startDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date());
-                String endDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
-                        .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)); // 30 días
+                String endDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        .format(new Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)); // 30 días después
 
                 PromotionRequest request = new PromotionRequest(
                         actividad.getId(),
@@ -404,27 +405,27 @@ public class PrincipalFragment extends Fragment implements ActividadAdapter.OnAc
                         endDate
                 );
 
-                ApiService api = RetrofitClient.getApiService();
-                api.promoteTask(actividad.getId(), request).enqueue(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        if (response.isSuccessful()) {
-                            actividad.setPromoted(isChecked);
-                            Toast.makeText(buttonView.getContext(),
-                                    isChecked ? "Actividad promocionada" : "Promoción desactivada",
-                                    Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(buttonView.getContext(), "Error al actualizar promoción", Toast.LENGTH_SHORT).show();
-                            switchPromocion.setChecked(!isChecked);
-                        }
-                    }
+                RetrofitClient.getApiService().promoteTask(actividad.getId(), request)
+                        .enqueue(new Callback<ResponseBody>() {
+                            @Override
+                            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                                if (response.isSuccessful()) {
+                                    actividad.setPromoted(isChecked);
+                                    Toast.makeText(buttonView.getContext(),
+                                            isChecked ? "Actividad promocionada" : "Promoción desactivada",
+                                            Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(buttonView.getContext(), "Error al actualizar promoción", Toast.LENGTH_SHORT).show();
+                                    switchPromocion.setChecked(!isChecked);
+                                }
+                            }
 
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        Toast.makeText(buttonView.getContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
-                        switchPromocion.setChecked(!isChecked);
-                    }
-                });
+                            @Override
+                            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                                Toast.makeText(buttonView.getContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
+                                switchPromocion.setChecked(!isChecked);
+                            }
+                        });
             });
         }
 
