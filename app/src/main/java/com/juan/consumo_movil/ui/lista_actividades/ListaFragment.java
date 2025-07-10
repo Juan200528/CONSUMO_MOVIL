@@ -8,14 +8,15 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.juan.consumo_movil.model.AttendanceCheckResponse;
-import com.juan.consumo_movil.model.Attendance;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,6 +29,7 @@ import com.juan.consumo_movil.LocalAttendanceManager;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.api.RetrofitClient;
 import com.juan.consumo_movil.model.ActividadModel;
+import com.juan.consumo_movil.model.AttendanceCheckResponse;
 import com.juan.consumo_movil.models.Actividad;
 import com.juan.consumo_movil.models.ActividadAdapterLista;
 import com.juan.consumo_movil.models.Asistente;
@@ -110,29 +112,20 @@ public class ListaFragment extends Fragment implements
                     public void onResponse(@NonNull Call<List<ActividadModel>> call, @NonNull Response<List<ActividadModel>> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             List<Actividad> nuevasActividades = new ArrayList<>();
-
+                            Date hoy = new Date();
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                             for (ActividadModel model : response.body()) {
                                 Actividad act = convertirAPIaActividad(model);
-
-                                // 👇 Busca si ya estaba marcado como asistido antes del refresco
-                                boolean yaAsiste = false;
-                                String oldAttendanceId = null;
-
-                                for (Actividad oldAct : actividadList) {
-                                    if (oldAct.getId().equals(act.getId())) {
-                                        yaAsiste = oldAct.isAsistido();
-                                        oldAttendanceId = oldAct.getAttendanceId(); // Necesitas tener este campo en tu clase Actividad
-                                        break;
+                                // Solo agregar si NO es pasada
+                                try {
+                                    Date fechaAct = sdf.parse(act.getFecha());
+                                    if (fechaAct != null && !fechaAct.before(hoy)) { // Si la fecha NO es anterior a hoy
+                                        nuevasActividades.add(act);
                                     }
+                                } catch (ParseException e) {
+                                    Log.e("ListaFragment", "Error al parsear fecha: " + act.getFecha(), e);
                                 }
-
-                                // 👇 Actualizamos los valores de asistencia
-                                act.setAsistido(yaAsiste);
-                                act.setAttendanceId(oldAttendanceId); // Si existe, se mantiene
-
-                                nuevasActividades.add(act);
                             }
-
                             actividadList = nuevasActividades;
                             adapter.updateItems(actividadList);
                             actualizarVisibilidad();
@@ -149,8 +142,6 @@ public class ListaFragment extends Fragment implements
                     }
                 });
     }
-
-
 
     private Actividad convertirAPIaActividad(ActividadModel model) {
         Actividad act = new Actividad();
@@ -173,8 +164,6 @@ public class ListaFragment extends Fragment implements
         // Mantener estado local si ya estaba marcado antes
         boolean yaAsiste = false;
         String oldAttendanceId = null;
-
-        // Buscar en la lista anterior
         for (Actividad oldAct : actividadList) {
             if (oldAct != null && oldAct.getId() != null && oldAct.getId().equals(act.getId())) {
                 yaAsiste = oldAct.isAsistido();
@@ -216,12 +205,10 @@ public class ListaFragment extends Fragment implements
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialog_buscar_filtros);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-
         EditText etBuscar = dialog.findViewById(R.id.etBuscar);
         RadioGroup rgFecha = dialog.findViewById(R.id.rgFechaSeleccionada);
         RadioGroup rgEstado = dialog.findViewById(R.id.rgEstadoSeleccionado);
         Button btnBuscar = dialog.findViewById(R.id.btnBuscar);
-
         btnBuscar.setOnClickListener(v -> {
             String filtroTexto = etBuscar.getText().toString().trim();
             boolean proximas = rgFecha.getCheckedRadioButtonId() == R.id.rbFechaProximas;
@@ -230,7 +217,6 @@ public class ListaFragment extends Fragment implements
             aplicarFiltros(filtroTexto, proximas, pasadas, promocionadas);
             dialog.dismiss();
         });
-
         dialog.show();
     }
 
@@ -250,24 +236,21 @@ public class ListaFragment extends Fragment implements
                             List<Actividad> filtradas = new ArrayList<>();
                             Date hoy = new Date();
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-
                             for (ActividadModel model : response.body()) {
                                 Actividad act = convertirAPIaActividad(model);
-
                                 if (!texto.isEmpty() && !act.getTitulo().toLowerCase().contains(texto.toLowerCase())) continue;
-
                                 try {
                                     Date fechaAct = sdf.parse(act.getFecha());
                                     if (proximas && fechaAct != null && !fechaAct.after(hoy)) continue;
                                     if (pasadas && fechaAct != null && !fechaAct.before(hoy)) continue;
-                                } catch (ParseException e) {}
-
+                                } catch (ParseException e) {
+                                    // Ignorar errores de formato de fecha
+                                }
                                 boolean coincidePromocion = !promocionadas || act.isPromocionada();
                                 if (coincidePromocion) {
                                     filtradas.add(act);
                                 }
                             }
-
                             actividadList = filtradas;
                             adapter.updateItems(filtradas);
                             actualizarVisibilidad();
@@ -295,6 +278,8 @@ public class ListaFragment extends Fragment implements
         }
     }
 
+    // --- LISTENERS ---
+
     @Override
     public void onActividadClick(Actividad actividad) {
         Toast.makeText(requireContext(), "Clic en: " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
@@ -303,11 +288,76 @@ public class ListaFragment extends Fragment implements
     @Override
     public void onDetallesClick(Actividad actividad) {
         if (getActivity() == null || getActivity().isFinishing()) return;
+
         new android.os.Handler(Looper.getMainLooper()).post(() -> {
             try {
-                ActividadAdapterLista.mostrarDialogoDetalles(actividad, requireContext());
+                mostrarDialogoDetalles(actividad);
             } catch (Exception ignored) {}
         });
+    }
+
+    /**
+     * Muestra un diálogo con los detalles de la actividad seleccionada
+     *
+     * @param actividad El modelo de la actividad seleccionada
+     */
+    private void mostrarDialogoDetalles(Actividad actividad) {
+        Dialog dialog = new Dialog(requireContext());
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE); // Sin título
+        dialog.setContentView(R.layout.dialogo_detalle_actividad);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); // Fondo transparente
+
+        // Ajustar tamaño del diálogo (80% del ancho de pantalla)
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(dialog.getWindow().getAttributes());
+        lp.width = (int) (requireContext().getResources().getDisplayMetrics().widthPixels * 0.8f);
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        dialog.getWindow().setAttributes(lp);
+
+        // Vincular vistas del diálogo
+        TextView tvTituloDetalle = dialog.findViewById(R.id.tvTituloDetalle);
+        TextView tvDescripcionDetalle = dialog.findViewById(R.id.tvDescripcionDetalle);
+        TextView tvFechaDetalle = dialog.findViewById(R.id.tvFechaDetalle);
+        TextView tvLugarDetalle = dialog.findViewById(R.id.tvLugarDetalle);
+        TextView tvResponsablesDetalle = dialog.findViewById(R.id.tvResponsablesDetalle);
+        ImageView ivImagenDetalle = dialog.findViewById(R.id.ivImagenDetalle);
+        Button btnVolver = dialog.findViewById(R.id.btnVolver);
+
+        // Asignar valores desde el modelo
+        tvTituloDetalle.setText(actividad.getTitulo());
+        tvDescripcionDetalle.setText(actividad.getDescripcion());
+
+        // Mostrar solo la parte de la fecha
+        String fechaCompleta = actividad.getFecha();
+        String fechaMostrar = fechaCompleta;
+        try {
+            fechaMostrar = fechaCompleta.split("T")[0]; // Solo la parte de la fecha
+        } catch (Exception ignored) {
+            // Dejar como está si no tiene el formato esperado
+        }
+        tvFechaDetalle.setText(fechaMostrar);
+
+        tvLugarDetalle.setText(actividad.getLugar());
+
+        tvResponsablesDetalle.setText(actividad.getResponsables());
+
+        // Cargar imagen con Glide
+        String imageUrl = actividad.getImagenRuta(); // Viene del modelo
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            Glide.with(requireContext())
+                    .load(imageUrl)
+                    .placeholder(R.drawable.default_image) // opcional
+                    .into(ivImagenDetalle);
+            ivImagenDetalle.setVisibility(View.VISIBLE);
+        } else {
+            ivImagenDetalle.setVisibility(View.GONE);
+        }
+
+        // Botón para cerrar el diálogo
+        btnVolver.setOnClickListener(v -> dialog.dismiss());
+
+        // Mostrar el diálogo
+        dialog.show();
     }
 
     @Override
@@ -322,27 +372,21 @@ public class ListaFragment extends Fragment implements
     private void mostrarDialogoConfirmarAsistir(Actividad actividad, int position) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_asistir);
-
         EditText etNombre = dialog.findViewById(R.id.etNombreAsistir);
         EditText etEmail = dialog.findViewById(R.id.etEmailAsistir);
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
-
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
-
         btnConfirmar.setOnClickListener(v -> {
             String nombre = etNombre.getText().toString().trim();
             String email = etEmail.getText().toString().trim();
-
             if (nombre.isEmpty() || email.isEmpty()) {
                 Toast.makeText(requireContext(), "Por favor complete todos los campos", Toast.LENGTH_SHORT).show();
                 return;
             }
-
             confirmarAsistencia(actividad, position, nombre, email);
             dialog.dismiss();
         });
-
         dialog.show();
     }
 
@@ -352,11 +396,8 @@ public class ListaFragment extends Fragment implements
             Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
             return;
         }
-
         String userId = miUsuarioId;
         String taskId = actividad.getId();
-
-        // Validación adicional: asegurarse que el ID no sea nulo o vacío
         if (taskId == null || taskId.trim().isEmpty()) {
             Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
             Log.e("confirmarAsistencia", "El ID de la actividad es nulo o vacío");
@@ -364,11 +405,11 @@ public class ListaFragment extends Fragment implements
         }
 
         Asistente asistente = new Asistente(
-                null, // id (null porque es nuevo)
+                null,
                 userId,
                 taskId,
                 nombre,
-                nombre.split(" ").length > 0 ? nombre.split(" ")[0] : nombre, // Evita fallos si no hay espacio
+                nombre.split(" ").length > 0 ? nombre.split(" ")[0] : nombre,
                 email,
                 actividad.getTitulo()
         );
@@ -380,14 +421,11 @@ public class ListaFragment extends Fragment implements
                         if (response.isSuccessful() && response.body() != null) {
                             Asistente res = response.body();
                             actividad.setAsistido(true);
-
-                            // Solo guardamos el attendanceId si viene del servidor
                             String serverAttendanceId = res.getId();
                             if (serverAttendanceId != null && !serverAttendanceId.isEmpty()) {
                                 actividad.setAttendanceId(serverAttendanceId);
                                 LocalAttendanceManager.saveAttendance(requireContext(), actividad.getId(), serverAttendanceId);
                             }
-
                             adapter.notifyItemChanged(position);
                             Toast.makeText(requireContext(), "Ahora asistes a " + actividad.getTitulo(), Toast.LENGTH_SHORT).show();
                         } else {
@@ -413,37 +451,27 @@ public class ListaFragment extends Fragment implements
     public void mostrarDialogoCancelarAsistencia(Actividad actividad, int position) {
         Dialog dialog = new Dialog(requireContext());
         dialog.setContentView(R.layout.dialogo_cancelar_asistencia);
-
         Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
         Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
-
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
-
         btnConfirmar.setOnClickListener(v -> {
             cancelarAsistencia(actividad, position);
             dialog.dismiss();
         });
-
         dialog.show();
     }
 
     private void cancelarAsistencia(Actividad actividad, int position) {
-        if (getContext() == null) {
-            Log.e("CancelarAsistencia", "Contexto no disponible");
-            return;
-        }
-
+        if (getContext() == null) return;
         String rawToken = sessionManager.fetchAuthToken();
         if (rawToken == null || rawToken.isEmpty()) {
             Toast.makeText(requireContext(), "No se encontró sesión", Toast.LENGTH_SHORT).show();
             return;
         }
-
         if (actividad == null) {
             Toast.makeText(requireContext(), "Actividad no válida", Toast.LENGTH_SHORT).show();
             return;
         }
-
         String taskId = actividad.getId();
         if (taskId == null || taskId.trim().isEmpty()) {
             Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
@@ -455,15 +483,12 @@ public class ListaFragment extends Fragment implements
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Verificar si el usuario asiste a esta actividad
         RetrofitClient.getApiService().checkUserAttendance(taskId)
                 .enqueue(new Callback<AttendanceCheckResponse>() {
                     @Override
                     public void onResponse(Call<AttendanceCheckResponse> call, Response<AttendanceCheckResponse> response) {
                         if (progressDialog.isShowing()) progressDialog.dismiss();
-
                         if (response.isSuccessful() && response.body() != null && response.body().isAttending()) {
-                            // Usuario sí asiste, ahora cancelamos
                             RetrofitClient.getApiService().cancelAttendance(taskId)
                                     .enqueue(new Callback<Void>() {
                                         @Override
@@ -478,7 +503,6 @@ public class ListaFragment extends Fragment implements
                                                 try {
                                                     String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
                                                     Log.e("CancelarAsistencia", "Error en API: " + errorBody);
-
                                                     int code = response.code();
                                                     if (code == 404) {
                                                         Toast.makeText(requireContext(), "Actividad no encontrada", Toast.LENGTH_SHORT).show();
@@ -499,7 +523,6 @@ public class ListaFragment extends Fragment implements
                                             Toast.makeText(requireContext(), "Fallo de conexión", Toast.LENGTH_SHORT).show();
                                         }
                                     });
-
                         } else {
                             Toast.makeText(requireContext(), "No estás registrado en esta actividad", Toast.LENGTH_SHORT).show();
                             actividad.setAsistido(false);
@@ -512,14 +535,11 @@ public class ListaFragment extends Fragment implements
                     @Override
                     public void onFailure(Call<AttendanceCheckResponse> call, Throwable t) {
                         if (progressDialog.isShowing()) progressDialog.dismiss();
-
                         Log.e("checkUserAttendance", "Fallo de red: " + t.getMessage());
                         Toast.makeText(requireContext(), "No se pudo verificar tu asistencia", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
-
-
 
     @Override
     public void onEditarClick(Actividad actividad) {
@@ -553,23 +573,19 @@ public class ListaFragment extends Fragment implements
     public void onGestionarAsistentesClick(Actividad actividad) {
         String activityId = actividad.getId();
         String activityTitle = actividad.getTitulo();
-
         if (activityId == null || activityId.isEmpty()) {
             Toast.makeText(requireContext(), "ID de actividad inválido", Toast.LENGTH_SHORT).show();
             return;
         }
-
         if (sessionManager.fetchAuthToken() == null) {
             Toast.makeText(requireContext(), "Token no disponible. Inicia sesión nuevamente.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         GestionarFragment gestionarFragment = new GestionarFragment();
         Bundle args = new Bundle();
         args.putString("activity_id", activityId);
         args.putString("activity_title", activityTitle);
         gestionarFragment.setArguments(args);
-
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, gestionarFragment)

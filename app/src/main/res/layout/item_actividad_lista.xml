@@ -8,6 +8,7 @@
     app:cardElevation="4dp"
     app:strokeWidth="2dp"
     app:strokeColor="#facc15"
+    app:cardBackgroundColor="@android:color/white"
     android:layout_margin="8dp">
 
     <LinearLayout

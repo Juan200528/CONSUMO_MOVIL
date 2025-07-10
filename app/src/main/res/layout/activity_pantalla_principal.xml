@@ -45,12 +45,12 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnRegister"
         android:layout_width="225dp"
-        android:layout_height="42dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:text="Registrar"
-        android:textColor="#FFFFFF"
         android:textAllCaps="false"
-        android:textStyle="normal"
-        android:layout_marginBottom="16dp"/>
+        android:textColor="#FFFFFF"
+        android:textStyle="normal" />
 
     <!-- Botón de Iniciar Sesión con borde -->
     <androidx.appcompat.widget.AppCompatButton

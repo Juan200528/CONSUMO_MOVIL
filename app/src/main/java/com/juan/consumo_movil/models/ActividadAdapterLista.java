@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -22,25 +23,27 @@ import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.utils.SessionManager;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int VIEW_TYPE_MI_ACTIVIDAD = 3;
     private static final int VIEW_TYPE_OTRA_ACTIVIDAD = 1;
     private static final int VIEW_TYPE_ASISTIR = 2;
-    private static final int VIEW_TYPE_PASADA = 4;
+    private static final int VIEW_TYPE_PASADA = 4; // 👀 Nuevo tipo
 
     private List<Actividad> actividadList;
     private String miUsuarioId;
-
-    private final OnActividadClickListener clickListener;
-    private final OnDetallesClickListener detallesListener;
-    private final OnAsistirClickListener asistirListener;
-    private final OnEditarClickListener editarListener;
-    private final OnEliminarClickListener eliminarListener;
-    private final OnPromocionarClickListener promocionarListener;
-    private final OnGestionarAsistentesClickListener gestionarAsistentesClickListener;
+    private OnActividadClickListener clickListener;
+    private OnDetallesClickListener detallesListener;
+    private OnAsistirClickListener asistirListener;
+    private OnEditarClickListener editarListener;
+    private OnEliminarClickListener eliminarListener;
+    private OnPromocionarClickListener promocionarListener;
+    private OnGestionarAsistentesClickListener gestionarAsistentesClickListener;
 
     public interface OnActividadClickListener {
         void onActividadClick(Actividad actividad);
@@ -93,14 +96,25 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     @Override
     public int getItemViewType(int position) {
         Actividad act = actividadList.get(position);
-        if (act.isPasada()) {
-            return VIEW_TYPE_PASADA;
-        } else if (act.getIdCreador() != null && act.getIdCreador().equals(miUsuarioId)) {
+
+        if (act.getIdCreador() != null && act.getIdCreador().equals(miUsuarioId)) {
             return VIEW_TYPE_MI_ACTIVIDAD;
         } else if (act.isAsistido()) {
             return VIEW_TYPE_ASISTIR;
+        } else if (esPasada(act)) {
+            return VIEW_TYPE_PASADA;
         } else {
             return VIEW_TYPE_OTRA_ACTIVIDAD;
+        }
+    }
+
+    private boolean esPasada(Actividad actividad) {
+        try {
+            Date hoy = new Date();
+            Date fechaAct = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(actividad.getFecha());
+            return fechaAct != null && !fechaAct.after(hoy); // Fecha menor o igual a hoy
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -108,34 +122,31 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+
         switch (viewType) {
             case VIEW_TYPE_MI_ACTIVIDAD:
-                return new MiActividadViewHolder(inflater.inflate(R.layout.item_actividad, parent, false),
-                        clickListener, detallesListener, editarListener, eliminarListener,
-                        promocionarListener, gestionarAsistentesClickListener);
+                return new MiActividadViewHolder(inflater.inflate(R.layout.item_actividad, parent, false));
             case VIEW_TYPE_ASISTIR:
-                return new AsistirViewHolder(inflater.inflate(R.layout.item_asistir, parent, false),
-                        detallesListener, asistirListener);
+                return new AsistirViewHolder(inflater.inflate(R.layout.item_asistir, parent, false));
             case VIEW_TYPE_PASADA:
-                return new PasadaViewHolder(inflater.inflate(R.layout.item_actividad_pasadas, parent, false),
-                        detallesListener);
+                return new PasadaViewHolder(inflater.inflate(R.layout.item_actividad_pasadas, parent, false));
             default:
-                return new OtraActividadViewHolder(inflater.inflate(R.layout.item_actividad_lista, parent, false),
-                        detallesListener, asistirListener);
+                return new OtraActividadViewHolder(inflater.inflate(R.layout.item_actividad_lista, parent, false));
         }
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Actividad actividad = actividadList.get(position);
+
         if (holder instanceof MiActividadViewHolder) {
-            ((MiActividadViewHolder) holder).bind(actividad, clickListener, editarListener, eliminarListener, promocionarListener, gestionarAsistentesClickListener);
+            ((MiActividadViewHolder) holder).bind(actividad);
         } else if (holder instanceof OtraActividadViewHolder) {
-            ((OtraActividadViewHolder) holder).bind(actividad, detallesListener, asistirListener);
+            ((OtraActividadViewHolder) holder).bind(actividad);
         } else if (holder instanceof AsistirViewHolder) {
-            ((AsistirViewHolder) holder).bind(actividad, detallesListener, asistirListener);
+            ((AsistirViewHolder) holder).bind(actividad);
         } else if (holder instanceof PasadaViewHolder) {
-            ((PasadaViewHolder) holder).bind(actividad, detallesListener);
+            ((PasadaViewHolder) holder).bind(actividad);
         }
     }
 
@@ -150,8 +161,9 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         notifyDataSetChanged();
     }
 
-    // ViewHolder para actividades propias
-    static class MiActividadViewHolder extends RecyclerView.ViewHolder {
+    // --- ViewHolder Classes ---
+
+    class MiActividadViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvTitulo;
         private final ImageView ivImagen;
         private final TextView btnVerDetalles;
@@ -161,13 +173,7 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         private final TextView tvAgregarAsistentes;
         private final ImageButton btnPlus;
 
-        MiActividadViewHolder(@NonNull View itemView,
-                              OnActividadClickListener clickListener,
-                              OnDetallesClickListener detallesListener,
-                              OnEditarClickListener editarListener,
-                              OnEliminarClickListener eliminarListener,
-                              OnPromocionarClickListener promocionarListener,
-                              OnGestionarAsistentesClickListener gestionarAsistentesClickListener) {
+        MiActividadViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitulo = itemView.findViewById(R.id.tvTituloActividad);
             ivImagen = itemView.findViewById(R.id.ivActividadImagen);
@@ -177,229 +183,89 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
             btnEliminar = itemView.findViewById(R.id.btnEliminar);
             tvAgregarAsistentes = itemView.findViewById(R.id.tvAgregarAsistentes);
             btnPlus = itemView.findViewById(R.id.btnPlus);
-
-            itemView.setOnClickListener(v -> {
-                if (clickListener != null) {
-                    clickListener.onActividadClick(null);
-                }
-            });
-
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) {
-                    detallesListener.onDetallesClick(null);
-                }
-            });
-
-            btnEditar.setOnClickListener(v -> {
-                if (editarListener != null) {
-                    editarListener.onEditarClick(null);
-                }
-            });
-
-            btnEliminar.setOnClickListener(v -> {
-                if (eliminarListener != null) {
-                    eliminarListener.onEliminarClick(null);
-                }
-            });
-
-            tvAgregarAsistentes.setOnClickListener(v -> {
-                if (gestionarAsistentesClickListener != null) {
-                    gestionarAsistentesClickListener.onGestionarAsistentesClick(null);
-                }
-            });
-
-            btnPlus.setOnClickListener(v -> {
-                if (gestionarAsistentesClickListener != null) {
-                    gestionarAsistentesClickListener.onGestionarAsistentesClick(null);
-                }
-            });
-
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (promocionarListener != null) {
-                    promocionarListener.onPromocionarClick(null, isChecked);
-                }
-            });
         }
 
-        void bind(Actividad actividad,
-                  OnActividadClickListener clickListener,
-                  OnEditarClickListener editarListener,
-                  OnEliminarClickListener eliminarListener,
-                  OnPromocionarClickListener promocionarListener,
-                  OnGestionarAsistentesClickListener gestionarAsistentesClickListener) {
+        void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
             cargarImagen(ivImagen, actividad.getImagenRuta());
             switchPromocion.setChecked(actividad.isPromocionada());
-
-            itemView.setOnClickListener(v -> {
-                if (clickListener != null) {
-                    clickListener.onActividadClick(actividad);
-                }
-            });
-
-
-
-            btnEditar.setOnClickListener(v -> {
-                if (editarListener != null) {
-                    editarListener.onEditarClick(actividad);
-                }
-            });
-
-            btnEliminar.setOnClickListener(v -> {
-                if (eliminarListener != null) {
-                    eliminarListener.onEliminarClick(actividad);
-                }
-            });
-
-            View.OnClickListener listener = v -> {
-                if (gestionarAsistentesClickListener != null) {
+            itemView.setOnClickListener(v -> clickListener.onActividadClick(actividad));
+            btnVerDetalles.setOnClickListener(v -> detallesListener.onDetallesClick(actividad));
+            btnEditar.setOnClickListener(v -> editarListener.onEditarClick(actividad));
+            btnEliminar.setOnClickListener(v -> eliminarListener.onEliminarClick(actividad));
+            View.OnClickListener gestionarListener = v ->
                     gestionarAsistentesClickListener.onGestionarAsistentesClick(actividad);
-                }
-            };
-
-            tvAgregarAsistentes.setOnClickListener(listener);
-            btnPlus.setOnClickListener(listener);
-
-            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (promocionarListener != null) {
-                    promocionarListener.onPromocionarClick(actividad, isChecked);
-                }
-            });
+            tvAgregarAsistentes.setOnClickListener(gestionarListener);
+            btnPlus.setOnClickListener(gestionarListener);
+            switchPromocion.setOnCheckedChangeListener((buttonView, isChecked) ->
+                    promocionarListener.onPromocionarClick(actividad, isChecked));
         }
     }
 
-    // ViewHolder para otras actividades
-    static class OtraActividadViewHolder extends RecyclerView.ViewHolder {
+    class OtraActividadViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvTitulo;
         private final ImageView ivImagen;
         private final Button btnVerDetalles;
         private final Button btnAsistir;
 
-        OtraActividadViewHolder(@NonNull View itemView,
-                                OnDetallesClickListener detallesListener,
-                                OnAsistirClickListener asistirListener) {
+        OtraActividadViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitulo = itemView.findViewById(R.id.tvTituloActividadLista);
             ivImagen = itemView.findViewById(R.id.ivActividadImagenLista);
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             btnAsistir = itemView.findViewById(R.id.btnAsistirActividad);
-
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) {
-                    detallesListener.onDetallesClick(null);
-                }
-            });
-
-            btnAsistir.setOnClickListener(v -> {
-                if (asistirListener != null) {
-                    asistirListener.onAsistirClick(null, -1);
-                }
-            });
         }
 
-        void bind(Actividad actividad,
-                  OnDetallesClickListener detallesListener,
-                  OnAsistirClickListener asistirListener) {
+        void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
             cargarImagen(ivImagen, actividad.getImagenRuta());
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) {
-                    detallesListener.onDetallesClick(actividad);
-                }
-            });
-            btnAsistir.setOnClickListener(v -> {
-                if (asistirListener != null) {
-                    asistirListener.onAsistirClick(actividad, getAdapterPosition());
-                }
-            });
+            btnVerDetalles.setOnClickListener(v -> detallesListener.onDetallesClick(actividad));
+            btnAsistir.setOnClickListener(v -> asistirListener.onAsistirClick(actividad, getAdapterPosition()));
         }
     }
 
-    // ViewHolder para actividades a las que ya asisto
-    static class AsistirViewHolder extends RecyclerView.ViewHolder {
+    class AsistirViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvTitulo;
         private final ImageView ivImagen;
         private final Button btnVerDetalles;
         private final Button btnCancelar;
 
-        AsistirViewHolder(@NonNull View itemView,
-                          OnDetallesClickListener detallesListener,
-                          OnAsistirClickListener asistirListener) {
+        AsistirViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitulo = itemView.findViewById(R.id.tvTituloActividadAsistir);
             ivImagen = itemView.findViewById(R.id.ivActividadImagenAsistir);
             btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
             btnCancelar = itemView.findViewById(R.id.btnCancelarAsistencia);
-
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) {
-                    detallesListener.onDetallesClick(null);
-                }
-            });
-
-            btnCancelar.setOnClickListener(v -> {
-                if (asistirListener != null) {
-                    asistirListener.onAsistirClick(null, -1);
-                }
-            });
         }
 
-        void bind(Actividad actividad,
-                  OnDetallesClickListener detallesListener,
-                  OnAsistirClickListener asistirListener) {
+        void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
             cargarImagen(ivImagen, actividad.getImagenRuta());
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) {
-                    detallesListener.onDetallesClick(actividad);
-                }
-            });
-            btnCancelar.setOnClickListener(v -> {
-                if (asistirListener != null) {
-                    asistirListener.onAsistirClick(actividad, getAdapterPosition());
-                }
-            });
+            btnVerDetalles.setOnClickListener(v -> detallesListener.onDetallesClick(actividad));
+            btnCancelar.setOnClickListener(v -> asistirListener.onAsistirClick(actividad, getAdapterPosition()));
         }
     }
 
-    // ViewHolder para actividades pasadas
-    static class PasadaViewHolder extends RecyclerView.ViewHolder {
+    class PasadaViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvTitulo;
-        private final TextView tvLugar;
-        private final TextView tvResponsable;
-        private final TextView tvFecha;
+        private final ImageView ivImagen;
         private final Button btnVerDetalles;
 
-        PasadaViewHolder(@NonNull View itemView,
-                         OnDetallesClickListener detallesListener) {
+        PasadaViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTitulo = itemView.findViewById(R.id.tvTitulo);
-            tvLugar = itemView.findViewById(R.id.tvLugar);
-            tvResponsable = itemView.findViewById(R.id.tvResponsable);
-            tvFecha = itemView.findViewById(R.id.tvFecha);
-            btnVerDetalles = itemView.findViewById(R.id.btnVerDetalles);
-
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) {
-                    detallesListener.onDetallesClick(null);
-                }
-            });
+            tvTitulo = itemView.findViewById(R.id.tvTituloActividadPasada);
+            ivImagen = itemView.findViewById(R.id.ivActividadImagenPasada);
+            btnVerDetalles = itemView.findViewById(R.id.btnVerDetallesPasada);
         }
 
-        void bind(Actividad actividad, OnDetallesClickListener detallesListener) {
+        void bind(Actividad actividad) {
             tvTitulo.setText(actividad.getTitulo());
-            tvLugar.setText("Lugar: " + actividad.getLugar());
-            tvResponsable.setText("Responsables: " + actividad.getResponsables());
-            tvFecha.setText("Fecha: " + actividad.getFecha());
-            btnVerDetalles.setOnClickListener(v -> {
-                if (detallesListener != null) {
-                    detallesListener.onDetallesClick(actividad);
-                }
-            });
+            cargarImagen(ivImagen, actividad.getImagenRuta());
+            btnVerDetalles.setOnClickListener(v -> detallesListener.onDetallesClick(actividad));
         }
     }
 
-    private static void cargarImagen(ImageView imageView, String imagePath) {
+    private void cargarImagen(ImageView imageView, String imagePath) {
         if (imagePath == null || imagePath.isEmpty()) {
             imageView.setImageResource(R.drawable.default_image);
             return;
@@ -428,6 +294,11 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialogo_detalle_actividad);
         dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.copyFrom(dialog.getWindow().getAttributes());
+        lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.8f);
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        dialog.getWindow().setAttributes(lp);
 
         TextView tvTitulo = dialog.findViewById(R.id.tvTituloDetalle);
         TextView tvDescripcion = dialog.findViewById(R.id.tvDescripcionDetalle);
@@ -442,8 +313,8 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
         tvFecha.setText(actividad.getFecha());
         tvLugar.setText(actividad.getLugar());
         tvResponsables.setText(actividad.getResponsables());
-        cargarImagenDialogo(ivImagen, actividad.getImagenRuta(), context);
 
+        cargarImagenDialogo(ivImagen, actividad.getImagenRuta(), context);
         btnVolver.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
@@ -476,7 +347,6 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     public static void mostrarDialogoEditar(Actividad actividad, Context context, OnGuardarCambiosListener listener) {
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialogo_editar_actividad);
-
         EditText etTitulo = dialog.findViewById(R.id.etEditarTitulo);
         EditText etDescripcion = dialog.findViewById(R.id.etEditarDescripcion);
         EditText etFecha = dialog.findViewById(R.id.etEditarFecha);
@@ -499,17 +369,14 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
                 Toast.makeText(context, "Complete todos los campos", Toast.LENGTH_SHORT).show();
                 return;
             }
-
             actividad.setTitulo(etTitulo.getText().toString());
             actividad.setDescripcion(etDescripcion.getText().toString());
             actividad.setFecha(etFecha.getText().toString());
             actividad.setLugar(etLugar.getText().toString());
             actividad.setResponsables(etResponsables.getText().toString());
-
             listener.onGuardar(actividad);
             dialog.dismiss();
         });
-
         ivCerrar.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
@@ -517,15 +384,16 @@ public class ActividadAdapterLista extends RecyclerView.Adapter<RecyclerView.Vie
     public static void mostrarDialogoEliminar(Actividad actividad, Context context, OnEliminarConfirmadoListener listener) {
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialogo_eliminar_actividad);
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        ImageView ivCerrar = dialog.findViewById(R.id.ivCerrar);
+        Button btnCancelar = dialog.findViewById(R.id.btnCancelar);
+        Button btnConfirmar = dialog.findViewById(R.id.btnConfirmar);
 
-        dialog.findViewById(R.id.ivCerrar).setOnClickListener(v -> dialog.dismiss());
-        dialog.findViewById(R.id.btnCancelar).setOnClickListener(v -> dialog.dismiss());
-        dialog.findViewById(R.id.btnConfirmar).setOnClickListener(v -> {
+        ivCerrar.setOnClickListener(v -> dialog.dismiss());
+        btnCancelar.setOnClickListener(v -> dialog.dismiss());
+        btnConfirmar.setOnClickListener(v -> {
             listener.onEliminar(actividad);
             dialog.dismiss();
         });
-
         dialog.show();
     }
 

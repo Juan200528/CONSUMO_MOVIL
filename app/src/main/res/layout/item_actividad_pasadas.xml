@@ -4,132 +4,66 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_margin="8dp"
     app:cardCornerRadius="16dp"
     app:cardElevation="4dp"
     app:strokeWidth="2dp"
-    app:strokeColor="#facc15"
-    app:cardBackgroundColor="@android:color/white"
-    android:layout_margin="8dp">
+    app:strokeColor="#9ca3af"
+    app:cardBackgroundColor="@android:color/white">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:layout_height="wrap_content">
 
-        <!-- Etiqueta FINALIZADA -->
-        <TextView
-            android:id="@+id/tvEstado"
-            android:layout_width="wrap_content"
+        <!-- Contenedor principal -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_estado_finalizada"
-            android:text="FINALIZADA"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:orientation="vertical"
+            android:padding="18dp">
 
-        <!-- Título -->
-        <TextView
-            android:id="@+id/tvTitulo"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Título de la Actividad"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            app:layout_constraintTop_toBottomOf="@id/tvEstado"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="8dp"/>
+            <!-- Título -->
+            <TextView
+                android:id="@+id/tvTituloActividadPasada"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:paddingEnd="160dp"
+                android:text="Título actividad"
+                android:layout_marginBottom="8dp"/>
 
-        <!-- Línea divisoria -->
-        <View
-            android:id="@+id/viewDivider"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:background="#DDD"
-            app:layout_constraintTop_toBottomOf="@id/tvTitulo"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="8dp" />
+            <!-- Imagen -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginTop="10dp"
+                android:clipChildren="true"
+                android:clipToPadding="true">
+                <ImageView
+                    android:id="@+id/ivActividadImagenPasada"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:adjustViewBounds="true"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="Imagen de actividad"
+                    android:src="@drawable/default_image"/>
+            </LinearLayout>
 
-        <!-- Lugar -->
-        <ImageView
-            android:id="@+id/ivLugarIcono"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_location"
-            app:layout_constraintTop_toBottomOf="@id/viewDivider"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginTop="12dp" />
+            <!-- Botón -->
+            <Button
+                android:id="@+id/btnVerDetallesPasada"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="36dp"
+                android:backgroundTint="#6B7280"
+                android:text="Ver Detalles"
+                android:textColor="#FFFFFF"/>
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvLugar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Lugar:"
-            android:textSize="14sp"
-            app:layout_constraintTop_toTopOf="@id/ivLugarIcono"
-            app:layout_constraintStart_toEndOf="@id/ivLugarIcono"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginStart="8dp" />
-
-        <!-- Responsable -->
-        <ImageView
-            android:id="@+id/ivResponsableIcono"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_person"
-            app:layout_constraintTop_toBottomOf="@id/ivLugarIcono"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <TextView
-            android:id="@+id/tvResponsable"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Responsable:"
-            android:textSize="14sp"
-            app:layout_constraintTop_toTopOf="@id/ivResponsableIcono"
-            app:layout_constraintStart_toEndOf="@id/ivResponsableIcono"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginStart="8dp" />
-
-        <!-- Fecha -->
-        <ImageView
-            android:id="@+id/ivFechaIcono"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_calendar"
-            app:layout_constraintTop_toBottomOf="@id/ivResponsableIcono"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <TextView
-            android:id="@+id/tvFecha"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Fecha:"
-            android:textSize="14sp"
-            app:layout_constraintTop_toTopOf="@id/ivFechaIcono"
-            app:layout_constraintStart_toEndOf="@id/ivFechaIcono"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginStart="8dp" />
-
-        <!-- Botón Ver detalles -->
-        <Button
-            android:id="@+id/btnVerDetalles"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ver detalles"
-            android:drawablePadding="8dp"
-            android:textColor="@android:color/white"
-            android:backgroundTint="@color/botonBorde"
-            app:layout_constraintTop_toBottomOf="@id/ivFechaIcono"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginTop="12dp" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Etiqueta "Pasada" -->
+    </FrameLayout>
 </com.google.android.material.card.MaterialCardView>
