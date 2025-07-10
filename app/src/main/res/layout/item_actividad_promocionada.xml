@@ -78,5 +78,20 @@
             android:textSize="16sp"
             android:gravity="center"
             android:textStyle="bold" />
+
+        <!-- Etiqueta "FINALIZADA" -->
+        <TextView
+            android:id="@+id/tvFinalizada"
+            android:layout_width="149dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:background="@drawable/finalizada_background"
+            android:padding="4dp"
+            android:text="FINALIZADA"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:textStyle="bold"
+            android:visibility="gone" />
     </FrameLayout>
 </com.google.android.material.card.MaterialCardView>

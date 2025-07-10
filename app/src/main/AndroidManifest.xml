@@ -3,6 +3,7 @@
 
     <!-- Permisos requeridos -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/> <!-- Solo para dispositivos anteriores a Android 9 -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

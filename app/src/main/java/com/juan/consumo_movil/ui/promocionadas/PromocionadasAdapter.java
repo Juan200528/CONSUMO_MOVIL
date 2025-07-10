@@ -1,5 +1,6 @@
 package com.juan.consumo_movil.ui.promocionadas;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,91 +15,114 @@ import com.bumptech.glide.Glide;
 import com.juan.consumo_movil.R;
 import com.juan.consumo_movil.model.ActividadModel;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
-/**
- * Adaptador para mostrar actividades promocionadas en un RecyclerView.
- */
-public class PromocionadasAdapter extends RecyclerView.Adapter<PromocionadasAdapter.PromocionadaViewHolder> {
+public class PromocionadasAdapter extends RecyclerView.Adapter<PromocionadasAdapter.ViewHolder> {
 
-    private List<ActividadModel> actividadesPromocionadas;
-    private final OnDetallesClickListener onDetallesClickListener;
+    private List<ActividadModel> actividades;
+    private OnItemClickListener listener;
 
-    /**
-     * Interfaz para manejar clics en "Ver Detalles"
-     */
-    public interface OnDetallesClickListener {
-        void onDetallesClick(ActividadModel actividadModel);
-    }
-
-    public PromocionadasAdapter(@NonNull List<ActividadModel> actividadesPromocionadas,
-                                @NonNull OnDetallesClickListener onDetallesClickListener) {
-        this.actividadesPromocionadas = actividadesPromocionadas != null
-                ? new ArrayList<>(actividadesPromocionadas)
-                : new ArrayList<>();
-        this.onDetallesClickListener = onDetallesClickListener;
-    }
-
-    /**
-     * Método para actualizar la lista de actividades desde fuera del adaptador
-     */
-    public void updateList(@NonNull List<ActividadModel> nuevaLista) {
-        if (nuevaLista != null) {
-            actividadesPromocionadas.clear();
-            actividadesPromocionadas.addAll(nuevaLista);
-            notifyDataSetChanged();
-        }
+    public PromocionadasAdapter(List<ActividadModel> actividades, OnItemClickListener listener) {
+        this.actividades = actividades;
+        this.listener = listener;
     }
 
     @NonNull
     @Override
-    public PromocionadaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_actividad_promocionada, parent, false);
-        return new PromocionadaViewHolder(view);
+        return new ViewHolder(view);
     }
 
+    @SuppressLint("NewApi")
     @Override
-    public void onBindViewHolder(@NonNull PromocionadaViewHolder holder, int position) {
-        ActividadModel actividad = actividadesPromocionadas.get(position);
-        holder.bind(actividad, onDetallesClickListener);
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        ActividadModel actividad = actividades.get(position);
+
+        // Mostrar título
+        holder.tvTituloActividadPromocionada.setText(actividad.getTitle());
+
+        // Cargar imagen
+        String imageUrl = actividad.getImage();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            Glide.with(holder.itemView)
+                    .load(imageUrl)
+                    .placeholder(R.drawable.default_image)
+                    .into(holder.ivActividadImagen);
+        }
+
+        // --- Lógica para mostrar u ocultar "FINALIZADA" ---
+        boolean isFinalizada = false;
+        try {
+            String fechaCompleta = actividad.getDate();
+
+            if (fechaCompleta == null || fechaCompleta.trim().isEmpty()) {
+                isFinalizada = false; // Fecha vacía, no es finalizada
+            } else {
+                // Separar por 'T' o espacio, dependiendo del formato
+                String[] partesFecha = fechaCompleta.split("[T\\s]+");
+                String fechaStr = partesFecha[0];
+
+                // Intentar parsear con LocalDate.parse() o con formateador
+                LocalDate fechaActividad;
+                try {
+                    fechaActividad = LocalDate.parse(fechaStr); // Formato ISO: yyyy-MM-dd
+                } catch (DateTimeParseException e1) {
+                    // Si falla, intentar con un formateador personalizado (ej. dd/MM/yyyy)
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    fechaActividad = LocalDate.parse(fechaStr, formatter);
+                }
+
+                LocalDate hoy = LocalDate.now();
+                isFinalizada = fechaActividad.isBefore(hoy);
+            }
+        } catch (Exception e) {
+            isFinalizada = false; // Si hay cualquier error, no se marca como finalizada
+        }
+
+        if (isFinalizada) {
+            holder.tvFinalizada.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvFinalizada.setVisibility(View.GONE);
+        }
+        // --- Fin lógica FINALIZADA ---
+
+        // Listener para ver detalles
+        holder.btnVerDetallesPromocionada.setOnClickListener(v -> listener.onItemClick(actividad));
     }
 
     @Override
     public int getItemCount() {
-        return actividadesPromocionadas.size();
+        return actividades.size();
     }
 
-    static class PromocionadaViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTituloActividadPromocionada;
-        ImageView ivActividadImagenPromocionada;
-        Button btnVerDetallesPromocionada;
+    public interface OnItemClickListener {
+        void onItemClick(ActividadModel actividad);
+    }
 
-        public PromocionadaViewHolder(@NonNull View itemView) {
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTituloActividadPromocionada;
+        ImageView ivActividadImagen;
+        Button btnVerDetallesPromocionada;
+        TextView tvFinalizada; // Referencia a la nueva etiqueta
+
+        public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTituloActividadPromocionada = itemView.findViewById(R.id.tvTituloActividadPromocionada);
-            ivActividadImagenPromocionada = itemView.findViewById(R.id.ivActividadImagen);
+            ivActividadImagen = itemView.findViewById(R.id.ivActividadImagen);
             btnVerDetallesPromocionada = itemView.findViewById(R.id.btnVerDetallesPromocionada);
+            tvFinalizada = itemView.findViewById(R.id.tvFinalizada); // Inicializar
         }
+    }
 
-        public void bind(ActividadModel actividadModel, OnDetallesClickListener listener) {
-            if (actividadModel != null) {
-                tvTituloActividadPromocionada.setText(actividadModel.getTitle());
-
-                // Cargar la imagen con Glide
-                Glide.with(itemView)
-                        .load(actividadModel.getImage()) // Devuelve la URL de la imagen
-                        .placeholder(R.drawable.default_image) // Imagen por defecto mientras se carga
-                        .error(R.drawable.default_image) // Imagen si hay error
-                        .into(ivActividadImagenPromocionada);
-
-                btnVerDetallesPromocionada.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onDetallesClick(actividadModel);
-                    }
-                });
-            }
-        }
+    // Método opcional para actualizar la lista desde el fragmento
+    public void updateList(List<ActividadModel> nuevasActividades) {
+        this.actividades.clear();
+        this.actividades.addAll(nuevasActividades);
+        notifyDataSetChanged();
     }
 }

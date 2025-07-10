@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:fillViewport="true">
 
     <com.google.android.material.card.MaterialCardView
@@ -12,182 +12,211 @@
         app:cardCornerRadius="16dp"
         app:cardElevation="4dp"
         app:strokeColor="#efb810"
-    app:strokeWidth="2dp"
-    app:cardBackgroundColor="@android:color/white"> <!-- Fondo blanco -->
+        app:strokeWidth="2dp"
+        app:cardBackgroundColor="@android:color/white">
 
-    <!-- Contenedor del título -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <!-- Título de la sección -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="16dp"
-            android:paddingBottom="8dp"
-            android:text="Detalles de la actividad"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <!-- Otros elementos del contenido -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:padding="16dp">
 
-            <!-- Imagen de la actividad -->
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:layout_marginBottom="16dp"
-                android:gravity="center">
-
-                <ImageView
-                    android:id="@+id/ivImagenDetalle"
-                    android:layout_width="match_parent"
-                    android:layout_height="200dp"
-                    android:adjustViewBounds="true"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/default_image" />
-            </FrameLayout>
-
-            <!-- Seccion Titulo -->
-            <LinearLayout
+            <!-- Contenedor del título y etiqueta FINALIZADA -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingVertical="2dp">
+                android:paddingTop="16dp"
+                android:paddingBottom="8dp">
 
+                <!-- Título de la sección -->
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvTituloSeccion"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text=" Titulo: "
+                    android:gravity="center"
+                    android:text="Detalles de la actividad"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
+                <!-- Etiqueta "FINALIZADA" (opcional) - Posicionada sobre el título -->
                 <TextView
-                    android:id="@+id/tvTituloDetalle"
-                    android:layout_width="match_parent"
+                    android:id="@+id/tvFinalizada"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="#424242"
-                    android:textSize="16sp" />
-            </LinearLayout>
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/finalizada_background"
+                    android:padding="4dp"
+                    android:text="FINALIZADA"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
 
-            <!-- Seccion Descripcion -->
+            </RelativeLayout>
+
+            <!-- Contenedor principal del contenido -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingVertical="2dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:orientation="vertical"
+                android:padding="6dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" Descripcion: "
-                    android:textStyle="bold"
-                    android:layout_marginStart="8dp" />
+                <!-- Imagen de la actividad -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:layout_marginBottom="16dp">
 
-                <TextView
-                    android:id="@+id/tvDescripcionDetalle"
+                    <ImageView
+                        android:id="@+id/ivImagenDetalle"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:adjustViewBounds="true"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/default_image" />
+                </FrameLayout>
+
+                <!-- Sección Título -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#424242"
-                    android:textSize="16sp"
-                    android:text="" />
-            </LinearLayout>
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="2dp">
 
-            <!-- Seccion Fecha -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingVertical="2dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Título: "
+                        android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" Fecha: "
-                    android:textStyle="bold"
-                    android:layout_marginStart="8dp" />
+                    <TextView
+                        android:id="@+id/tvTituloDetalle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=""
+                        android:textColor="#424242"
+                        android:textSize="16sp" />
+                </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvFechaDetalle"
+                <!-- Sección Descripción -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#424242"
-                    android:textSize="16sp"
-                    android:text="" />
-            </LinearLayout>
+                    android:paddingVertical="2dp"
+                    android:orientation="horizontal"
+                    android:gravity="top">
 
-            <!-- Seccion Lugar -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingVertical="2dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Descripción: "
+                        android:textStyle="bold"
+                        android:layout_marginStart="8dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" Lugar: "
-                    android:textStyle="bold"
-                    android:layout_marginStart="8dp" />
+                    <TextView
+                        android:id="@+id/tvDescripcionDetalle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="#424242"
+                        android:textSize="16sp"
+                        android:text="" />
+                </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvLugarDetalle"
+                <!-- Sección Fecha -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#424242"
-                    android:textSize="16sp"
-                    android:text="" />
-            </LinearLayout>
+                    android:paddingVertical="2dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-            <!-- Seccion Responsables -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingVertical="2dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fecha: "
+                        android:textStyle="bold"
+                        android:layout_marginStart="8dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" Responsables: "
-                    android:textStyle="bold"
-                    android:layout_marginStart="8dp" />
+                    <TextView
+                        android:id="@+id/tvFechaDetalle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="#424242"
+                        android:textSize="16sp"
+                        android:text="" />
+                </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvResponsablesDetalle"
+                <!-- Sección Lugar -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#424242"
-                    android:textSize="16sp"
-                    android:text="" />
+                    android:paddingVertical="2dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Lugar: "
+                        android:textStyle="bold"
+                        android:layout_marginStart="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvLugarDetalle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="#424242"
+                        android:textSize="16sp"
+                        android:text="" />
+                </LinearLayout>
+
+                <!-- Sección Responsables -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingVertical="2dp"
+                    android:orientation="horizontal"
+                    android:gravity="top">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Responsables: "
+                        android:textStyle="bold"
+                        android:layout_marginStart="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvResponsablesDetalle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="#424242"
+                        android:textSize="16sp"
+                        android:text="" />
+                </LinearLayout>
+
+                <!-- Botón Volver -->
+                <Button
+                    android:id="@+id/btnVolver"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:backgroundTint="#03683E"
+                    android:text="Volver"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:layout_marginTop="16dp" />
+
             </LinearLayout>
-
-            <!-- Botón Volver -->
-            <Button
-                android:id="@+id/btnVolver"
-                android:layout_width="120dp"
-                android:layout_height="40dp"
-                android:layout_gravity="center"
-                android:backgroundTint="#03683E"
-                android:text="Volver"
-                android:textAllCaps="false"
-                android:textColor="@android:color/white"
-                android:textSize="14sp" />
-
         </LinearLayout>
-    </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
-    </ScrollView>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>
