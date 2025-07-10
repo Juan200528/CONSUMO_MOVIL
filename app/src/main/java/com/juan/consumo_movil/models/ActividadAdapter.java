@@ -1,5 +1,6 @@
 package com.juan.consumo_movil.models;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -286,9 +287,10 @@ public class ActividadAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     static class PasadasViewHolder extends RecyclerView.ViewHolder {
         RecyclerView recyclerPasadas;
 
+        @SuppressLint("WrongViewCast")
         public PasadasViewHolder(@NonNull View itemView) {
             super(itemView);
-            recyclerPasadas = itemView.findViewById(R.id.recyclerActividadesPasadas);
+            recyclerPasadas = itemView.findViewById(R.id.tvTituloActividadPasada);
         }
 
         public void bind(List<ActividadModel> pasadas,
