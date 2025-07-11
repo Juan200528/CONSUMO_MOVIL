@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:background="#F8FAFC"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F8FAFC"
     android:padding="20dp"
     android:clipToPadding="false">
 
@@ -43,21 +43,19 @@
             android:layout_marginBottom="32dp"
             android:clipToOutline="true">
 
-            <!-- EditText para título de la actividad -->
+            <!-- Spinner para seleccionar actividad -->
             <TextView
-                android:text="Título de la Actividad"
+                android:text="Selecciona una Actividad"
                 android:textStyle="bold"
                 android:textColor="#1E293B"
                 android:layout_marginBottom="8dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
 
-            <EditText
-                android:id="@+id/etTituloActividad"
+            <Spinner
+                android:id="@+id/spinnerActividades"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:hint="Ingresa el título"
-                android:inputType="text"
                 android:background="@drawable/edit_text_background"
                 android:layout_marginBottom="20dp" />
 
