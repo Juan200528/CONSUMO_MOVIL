@@ -8,6 +8,7 @@ public class ChatMessage {
     private String reaction;
     private boolean isAudio;
     private String audioUrl;
+    private String autor; // ✅ Campo correcto para el nombre del usuario
 
     public ChatMessage() {}
 
@@ -17,6 +18,7 @@ public class ChatMessage {
         this.timestamp = timestamp;
     }
 
+    // Getters y setters
     public String getSenderId() { return senderId; }
     public void setSenderId(String senderId) { this.senderId = senderId; }
 
@@ -37,4 +39,7 @@ public class ChatMessage {
 
     public String getAudioUrl() { return audioUrl; }
     public void setAudioUrl(String audioUrl) { this.audioUrl = audioUrl; }
+
+    public String getAutor() { return autor; }        // ✅ getter
+    public void setAutor(String autor) { this.autor = autor; } // ✅ setter
 }

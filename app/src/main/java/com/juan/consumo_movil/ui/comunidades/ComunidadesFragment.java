@@ -6,7 +6,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
@@ -23,14 +22,13 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.juan.consumo_movil.R;
-import com.juan.consumo_movil.model.ChatMessage;
 import com.juan.consumo_movil.model.ComunidadModel;
-import com.juan.consumo_movil.ui.chat.ChatAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ComunidadesFragment extends Fragment {
+
     private RecyclerView recyclerComunidades;
     private FloatingActionButton fabCrearComunidad;
     private ComunidadAdapter adapter;
@@ -38,7 +36,10 @@ public class ComunidadesFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_comunidades, container, false);
 
         recyclerComunidades = view.findViewById(R.id.recyclerComunidades);
@@ -51,8 +52,6 @@ public class ComunidadesFragment extends Fragment {
         fabCrearComunidad.setOnClickListener(v -> mostrarDialogoCrearComunidad());
 
         cargarComunidades();
-        Log.d("FAB", "fabCrearComunidad es null? " + (fabCrearComunidad == null));
-
 
         return view;
     }
@@ -67,8 +66,11 @@ public class ComunidadesFragment extends Fragment {
 
         builder.setPositiveButton("Crear", (dialog, which) -> {
             String nombre = input.getText().toString().trim();
-            if (!nombre.isEmpty()) crearComunidad(nombre);
+            if (!nombre.isEmpty()) {
+                crearComunidad(nombre);
+            }
         });
+
         builder.setNegativeButton("Cancelar", null);
         builder.show();
     }
@@ -78,10 +80,13 @@ public class ComunidadesFragment extends Fragment {
         String comunidadId = ref.push().getKey();
 
         String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
         ComunidadModel comunidad = new ComunidadModel(comunidadId, nombreComunidad, currentUserId);
         comunidad.addMiembro(currentUserId);
 
-        ref.child(comunidadId).setValue(comunidad);
+        ref.child(comunidadId).setValue(comunidad)
+                .addOnSuccessListener(unused -> Log.d("Firebase", "Comunidad creada"))
+                .addOnFailureListener(e -> Log.e("Firebase", "Error al crear comunidad", e));
     }
 
     private void cargarComunidades() {
@@ -90,7 +95,6 @@ public class ComunidadesFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 comunidadList.clear();
-                String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
                 for (DataSnapshot ds : snapshot.getChildren()) {
                     ComunidadModel comunidad = ds.getValue(ComunidadModel.class);
@@ -104,7 +108,7 @@ public class ComunidadesFragment extends Fragment {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("Comunidades", "Error al cargar", error.toException());
+                Log.e("Firebase", "Error al cargar comunidades", error.toException());
             }
         });
     }

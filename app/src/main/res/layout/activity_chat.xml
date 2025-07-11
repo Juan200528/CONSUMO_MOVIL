@@ -61,19 +61,6 @@
             android:importantForAutofill="no"/>
 
         <ImageButton
-            android:id="@+id/btnRecord"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/bg_circle_button"
-            android:contentDescription="Grabar"
-            android:src="@drawable/ic_mic"
-            app:tint="@color/primaryColor"
-            android:elevation="4dp"
-            android:scaleType="centerInside"
-            tools:ignore="TouchTargetSizeCheck"/>
-
-        <ImageButton
             android:id="@+id/sendButton"
             android:layout_width="40dp"
             android:layout_height="40dp"
@@ -81,9 +68,10 @@
             android:background="@drawable/bg_circle_button"
             android:contentDescription="Enviar"
             android:src="@drawable/ic_send"
-            app:tint="@color/primaryColor"
-            android:elevation="4dp"
-            android:scaleType="centerInside"
-            tools:ignore="TouchTargetSizeCheck"/>
+            android:padding="8dp"
+        app:tint="@color/primaryColor"
+        android:elevation="4dp"
+        android:scaleType="centerInside"
+        tools:ignore="TouchTargetSizeCheck"/>
     </LinearLayout>
 </LinearLayout>

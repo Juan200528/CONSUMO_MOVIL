@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,7 +53,13 @@ public class ComunidadAdapter extends RecyclerView.Adapter<ComunidadAdapter.View
                         .child(comunidad.getId())
                         .child("miembros")
                         .child(currentUserId)
-                        .setValue(true);
+                        .setValue(true)
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(context, "Te uniste a la comunidad", Toast.LENGTH_SHORT).show();
+                            comunidad.addMiembro(currentUserId); // Actualiza en memoria
+                            notifyItemChanged(position);
+                        })
+                        .addOnFailureListener(e -> Toast.makeText(context, "Error al unirse", Toast.LENGTH_SHORT).show());
             } else {
                 Intent intent = new Intent(context, ChatActivity.class);
                 intent.putExtra("comunidadId", comunidad.getId());
@@ -61,29 +68,71 @@ public class ComunidadAdapter extends RecyclerView.Adapter<ComunidadAdapter.View
             }
         });
 
-        // 🔴 NUEVO: Long click para eliminar comunidad (solo el creador puede)
+        // Long click para opciones del creador
         holder.itemView.setOnLongClickListener(v -> {
             if (comunidad.getCreadorId().equals(currentUserId)) {
+                CharSequence[] opciones = {"Editar nombre", "Eliminar comunidad"};
                 new AlertDialog.Builder(context)
-                        .setTitle("Eliminar comunidad")
-                        .setMessage("¿Deseas eliminar esta comunidad? Se eliminará también su chat.")
-                        .setPositiveButton("Eliminar", (dialog, which) -> {
-                            FirebaseDatabase.getInstance().getReference("comunidades")
-                                    .child(comunidad.getId()).removeValue()
-                                    .addOnSuccessListener(aVoid ->
-                                            Toast.makeText(context, "Comunidad eliminada", Toast.LENGTH_SHORT).show()
-                                    )
-                                    .addOnFailureListener(e ->
-                                            Toast.makeText(context, "Error al eliminar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                                    );
+                        .setTitle("Opciones")
+                        .setItems(opciones, (dialog, which) -> {
+                            if (which == 0) {
+                                // Editar nombre
+                                mostrarDialogoEditarNombre(comunidad);
+                            } else if (which == 1) {
+                                // Eliminar comunidad
+                                new AlertDialog.Builder(context)
+                                        .setTitle("Eliminar comunidad")
+                                        .setMessage("¿Deseas eliminar esta comunidad? Se eliminará también su chat.")
+                                        .setPositiveButton("Eliminar", (d, w) -> {
+                                            FirebaseDatabase.getInstance().getReference("comunidades")
+                                                    .child(comunidad.getId()).removeValue()
+                                                    .addOnSuccessListener(aVoid ->
+                                                            Toast.makeText(context, "Comunidad eliminada", Toast.LENGTH_SHORT).show()
+                                                    )
+                                                    .addOnFailureListener(e ->
+                                                            Toast.makeText(context, "Error al eliminar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                                                    );
+                                        })
+                                        .setNegativeButton("Cancelar", null)
+                                        .show();
+                            }
                         })
-                        .setNegativeButton("Cancelar", null)
+                        .setNegativeButton("Cerrar", null)
                         .show();
             } else {
-                Toast.makeText(context, "Solo el creador puede eliminar esta comunidad", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Solo el creador puede modificar esta comunidad", Toast.LENGTH_SHORT).show();
             }
             return true;
         });
+    }
+
+    // === Muestra diálogo para editar el nombre de la comunidad ===
+    private void mostrarDialogoEditarNombre(ComunidadModel comunidad) {
+        EditText input = new EditText(context);
+        input.setText(comunidad.getNombre());
+
+        new AlertDialog.Builder(context)
+                .setTitle("Editar nombre de la comunidad")
+                .setView(input)
+                .setPositiveButton("Guardar", (dialog, which) -> {
+                    String nuevoNombre = input.getText().toString().trim();
+                    if (!nuevoNombre.isEmpty()) {
+                        FirebaseDatabase.getInstance().getReference("comunidades")
+                                .child(comunidad.getId())
+                                .child("nombre")
+                                .setValue(nuevoNombre)
+                                .addOnSuccessListener(aVoid ->
+                                        Toast.makeText(context, "Nombre actualizado", Toast.LENGTH_SHORT).show()
+                                )
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(context, "Error al actualizar: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                                );
+                    } else {
+                        Toast.makeText(context, "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
     @Override

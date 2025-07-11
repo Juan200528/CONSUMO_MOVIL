@@ -2,6 +2,8 @@ package com.juan.consumo_movil.api;
 
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.AttendanceCheckResponse;
+import com.juan.consumo_movil.model.ChatMessage;
+import com.juan.consumo_movil.model.ComunidadModel;
 import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.models.ResetPasswordRequest;
@@ -11,6 +13,7 @@ import com.juan.consumo_movil.models.NotificationConfig;
 import com.juan.consumo_movil.models.NotificationResponse;
 
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -66,6 +69,8 @@ public interface ApiService {
             @Part("responsible") RequestBody responsible,
             @Part MultipartBody.Part image
     );
+    @GET("/api/user")
+    Call<User> getCurrentUser();
 
     // 🧑‍🤝‍🧑 Obtener lista de actividades de otros usuarios
     @GET("api/tasks/others")
@@ -183,4 +188,31 @@ public interface ApiService {
             @Header("Authorization") String token,
             @Path("id") String id
     );
+    @GET("comunidades/{id}/mensajes")
+    Call<List<ChatMessage>> getMensajes(@Path("id") String comunidadId);
+
+    @POST("comunidades")
+    Call<ComunidadModel> crearComunidad(@Body Map<String, String> body);
+
+    @POST("comunidades/{id}/unirse")
+    Call<ResponseBody> unirseComunidad(@Path("id") String comunidadId);
+
+    @GET("comunidades/{id}/mensajes")
+    Call<List<ChatMessage>> obtenerMensajes(@Path("id") String comunidadId);
+
+    @POST("comunidades/{id}/mensajes")
+    Call<ChatMessage> enviarMensaje(
+            @Path("id") String comunidadId,
+            @Body Map<String, String> body
+    );
+
+    @DELETE("comunidades/{comunidadId}/mensajes/{mensajeId}")
+    Call<ResponseBody> eliminarMensaje(
+            @Path("comunidadId") String comunidadId,
+            @Path("mensajeId") String mensajeId
+    );
+
+    @DELETE("comunidades/{id}")
+    Call<ResponseBody> eliminarComunidad(@Path("id") String comunidadId);
+
 }
