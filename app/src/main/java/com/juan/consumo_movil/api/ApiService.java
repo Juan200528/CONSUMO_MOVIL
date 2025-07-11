@@ -47,7 +47,7 @@ public interface ApiService {
     Call<Void> logout();
 
     // 👤 Actualizar datos del usuario
-    @PUT("/perfil")
+    @PUT("/api/auth/perfil")
     Call<Void> cambiarInfoPerfil(
             @Header("Authorization") String token,
             @Body InfoPerfilRequest infoPerfilRequest
