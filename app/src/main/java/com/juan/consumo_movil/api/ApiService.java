@@ -2,6 +2,8 @@ package com.juan.consumo_movil.api;
 
 import com.juan.consumo_movil.model.ActividadModel;
 import com.juan.consumo_movil.model.AttendanceCheckResponse;
+import com.juan.consumo_movil.model.InfoPerfilRequest;
+import com.juan.consumo_movil.model.PerfilRequest;
 import com.juan.consumo_movil.models.Asistente;
 import com.juan.consumo_movil.model.LoginResponse;
 import com.juan.consumo_movil.models.ResetPasswordRequest;
@@ -16,6 +18,8 @@ import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
@@ -43,10 +47,21 @@ public interface ApiService {
     Call<Void> logout();
 
     // 👤 Actualizar datos del usuario
-    @PUT("users/{id}")
-    Call<User> updateUser(
-            @Path("id") int id,
-            @Body User user,
+    @PUT("/perfil")
+    Call<Void> cambiarInfoPerfil(
+            @Header("Authorization") String token,
+            @Body InfoPerfilRequest infoPerfilRequest
+    );
+
+    @Multipart
+    @PUT("/profile/picture")
+    Call<Void> cambiarFoto(
+            @Header("Authorization") String token,
+            @Part MultipartBody.Part foto
+    );
+
+    @DELETE("/profile/picture")
+    Call<Void> eliminarFotoPerfil(
             @Header("Authorization") String token
     );
 
@@ -115,10 +130,8 @@ public interface ApiService {
     Call<Void> cancelAttendance(@Path("taskId") String taskId);
 
     // ✅ NUEVO MÉTODO ADICIONAL: Verifica si el usuario ya asiste a esta actividad
-
     @GET("/attendance/check/{taskId}")
     Call<AttendanceCheckResponse> checkUserAttendance(@Path("taskId") String taskId);
-
 
     // 📋 Obtener lista de asistentes por
     @GET("api/attendances/{taskId}")
